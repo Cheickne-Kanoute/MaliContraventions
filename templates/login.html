@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Connexion - Mali Contraventions{% endblock %}
+
+{% block extra_head %}
+<style>
+    .navbar-custom, .footer-custom { display: none !important; }
+    html, body { height: 100%; background-color: #f8fafc; }
+    body { display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    main.container-fluid { width: 100%; max-width: 420px; padding: 1rem !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card card-custom p-3 p-sm-4 shadow-sm border-0 rounded-4">
+    <!-- Mali Flag Line Header -->
+    <div class="position-absolute top-0 start-0 end-0 rounded-top-4" style="height: 4px; background: linear-gradient(to right, #008751 33.33%, #FCD116 33.33%, #FCD116 66.66%, #CE1126 66.66%);"></div>
+
+    <div class="d-flex align-items-center justify-content-between mb-2">
+        <a href="{% url 'dashboard' %}" class="text-decoration-none text-muted fw-semibold" style="font-size: 0.78rem;">
+            <i class="fa-solid fa-arrow-left me-1"></i> Retour à l'accueil
+        </a>
+    </div>
+
+    <div class="text-center my-2">
+        <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 p-2 rounded-circle text-success mb-2" style="width: 44px; height: 44px;">
+            <i class="fa-solid fa-shield-halved fs-5"></i>
+        </div>
+        <h5 class="fw-extrabold text-dark mb-0">MALI CONTRAVENTIONS</h5>
+        <small class="text-muted d-block" style="font-size: 0.72rem;">Authentification Sécurisée • Police Nationale</small>
+    </div>
+
+    <form method="post" action="{% url 'login' %}" class="mt-2">
+        {% csrf_token %}
+        
+        <div class="mb-2">
+            <label for="id_username" class="form-label text-muted fw-semibold mb-1" style="font-size: 0.78rem;">Identifiant (Username)</label>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-user text-secondary"></i></span>
+                <input type="text" name="username" class="form-control bg-light border-start-0" id="id_username" placeholder="ex. admin, agent1, citoyen1" required>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="id_password" class="form-label text-muted fw-semibold mb-1" style="font-size: 0.78rem;">Mot de passe</label>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-lock text-secondary"></i></span>
+                <input type="password" name="password" class="form-control bg-light border-start-0" id="id_password" placeholder="••••••••" required>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-mali w-100 py-2 mb-2 fw-bold" style="font-size: 0.85rem;">
+            <i class="fa-solid fa-right-to-bracket me-1"></i> Se Connecter
+        </button>
+    </form>
+
+    <!-- Quick Demo Accounts Switcher -->
+    <div class="pt-2 border-top text-center mt-1">
+        <small class="text-muted fw-bold d-block mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px;">DÉMO RAPIDE :</small>
+        <div class="btn-group btn-group-sm w-100 mb-2">
+            <button type="button" class="btn btn-outline-primary py-1" onclick="fillLogin('admin', 'admin123')" style="font-size: 0.72rem;">
+                <i class="fa-solid fa-user-shield me-1"></i>Admin
+            </button>
+            <button type="button" class="btn btn-outline-warning text-dark py-1" onclick="fillLogin('agent1', 'agent123')" style="font-size: 0.72rem;">
+                <i class="fa-solid fa-user-ninja me-1"></i>Agent
+            </button>
+            <button type="button" class="btn btn-outline-success py-1" onclick="fillLogin('citoyen1', 'citoyen123')" style="font-size: 0.72rem;">
+                <i class="fa-solid fa-user me-1"></i>Citoyen
+            </button>
+        </div>
+    </div>
+
+    <div class="text-center pt-1">
+        <small class="text-muted" style="font-size: 0.78rem;">Pas encore de compte ? 
+            <a href="{% url 'register' %}" class="fw-bold text-success text-decoration-none">S'inscrire comme citoyen</a>
+        </small>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function fillLogin(user, pwd) {
+    document.getElementById('id_username').value = user;
+    document.getElementById('id_password').value = pwd;
+}
+</script>
+{% endblock %}

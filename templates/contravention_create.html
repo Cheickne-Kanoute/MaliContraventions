@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}Verbalisation - Nouvelle Contravention{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-custom p-4 p-md-5">
+            <div class="d-flex align-items-center mb-4">
+                <div class="bg-success bg-opacity-10 p-3 rounded-circle text-success me-3">
+                    <i class="fa-solid fa-file-signature fs-2"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-dark mb-0">Procès-Verbal de Contravention</h3>
+                    <p class="text-muted small mb-0">Saisie et enregistrement d'une infraction constatée sur la voie publique</p>
+                </div>
+            </div>
+
+            <form method="post" action="{% url 'contravention_create' %}">
+                {% csrf_token %}
+
+                <!-- Hidden inputs for backend form & NINA linkage -->
+                <div class="d-none">
+                    {{ form.citoyen }}
+                </div>
+                <input type="hidden" name="nina_id" id="input-nina-id" value="">
+
+                <!-- Unified Single NINA Search Input -->
+                <div class="card bg-light border-0 p-3 mb-4 rounded-4 position-relative">
+                    <h6 class="fw-bold text-success mb-1"><i class="fa-solid fa-address-card me-2"></i>1. Identification du Contrevenant (Registre NINA)</h6>
+                    <small class="text-muted d-block mb-3">Recherchez parmi les 3 000 citoyens recensés par N° NINA, Nom, Téléphone ou Plaque...</small>
+
+                    <div class="position-relative">
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-success"></i></span>
+                            <input type="text" id="input-search-nina" class="form-control bg-white border-start-0 fs-6" placeholder="Tapez N° NINA, Nom, Téléphone (ex. Coulibaly, NINA-1990...)" autocomplete="off">
+                        </div>
+                        <div id="results-search-nina" class="list-group position-absolute start-0 end-0 mt-1 shadow-lg z-3 d-none" style="max-height: 240px; overflow-y: auto;"></div>
+                    </div>
+
+                    <!-- Selected Citizen Display Banner -->
+                    <div id="selected-citizen-box" class="alert alert-success bg-success bg-opacity-10 border border-success rounded-3 p-3 mt-3 mb-0 d-none">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <small class="text-uppercase fw-bold text-success d-block" style="font-size: 0.7rem;">Contrevenant Sélectionné du Fichier NINA :</small>
+                                <strong id="selected-citizen-name" class="fs-6 text-dark"></strong>
+                                <small id="selected-citizen-info" class="text-muted d-block" style="font-size: 0.78rem;"></small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearCitizenSelection()">
+                                <i class="fa-solid fa-xmark me-1"></i> Réinitialiser
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-light border-0 p-3 mb-4 rounded-4">
+                    <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-car me-2"></i>2. Informations Véhicule & Infraction</h6>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Type de véhicule</label>
+                            {{ form.type_vehicule }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Immatriculation / Plaque</label>
+                            {{ form.immatriculation_vehicule }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Infraction constatée</label>
+                        {{ form.infraction }}
+                    </div>
+                </div>
+
+                <div class="card bg-light border-0 p-3 mb-4 rounded-4">
+                    <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-location-dot me-2"></i>3. Localisation & Circonstances</h6>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Commune / Zone</label>
+                            {{ form.commune }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Adresse / Lieu exact</label>
+                            {{ form.lieu_adresse }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Observations / Remarques de l'agent</label>
+                        {{ form.notes }}
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 justify-content-end">
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary rounded-pill px-4">Annuler</a>
+                    <button type="submit" class="btn btn-mali rounded-pill px-5 shadow-sm">
+                        <i class="fa-solid fa-check-circle me-2"></i> Transmettre pour Validation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const inputSearch = document.getElementById('input-search-nina');
+const resultsBox = document.getElementById('results-search-nina');
+const selectedBox = document.getElementById('selected-citizen-box');
+const selectedName = document.getElementById('selected-citizen-name');
+const selectedInfo = document.getElementById('selected-citizen-info');
+const inputNinaId = document.getElementById('input-nina-id');
+
+if (inputSearch && resultsBox) {
+    let timeoutId;
+    inputSearch.addEventListener('input', function() {
+        clearTimeout(timeoutId);
+        const q = this.value.trim();
+        if (q.length < 2) {
+            resultsBox.classList.add('d-none');
+            resultsBox.innerHTML = '';
+            return;
+        }
+        timeoutId = setTimeout(() => {
+            fetch(`/api/recherche-nina/?q=${encodeURIComponent(q)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.results && data.results.length > 0) {
+                        let html = '';
+                        data.results.forEach(c => {
+                            html += `
+                                <button type="button" class="list-group-item list-group-item-action py-2 px-3" onclick="selectCitizenFromNina('${c.id}', '${c.nom_complet}', '${c.nin_nina}', '${c.telephone}', '${c.immatriculation_vehicule || ''}', '${c.adresse_quartier || ''}', '${c.commune || ''}')">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="d-block text-dark">${c.nom_complet}</strong>
+                                            <small class="text-muted">NINA: ${c.nin_nina} • Tél: ${c.telephone} • Permis: ${c.statut_permis}</small>
+                                        </div>
+                                        <span class="badge bg-secondary font-monospace">${c.immatriculation_vehicule || 'Sans Plaque'}</span>
+                                    </div>
+                                </button>
+                            `;
+                        });
+                        resultsBox.innerHTML = html;
+                        resultsBox.classList.remove('d-none');
+                    } else {
+                        resultsBox.innerHTML = '<div class="p-3 text-muted small bg-white">Aucun citoyen trouvé dans le Registre NINA.</div>';
+                        resultsBox.classList.remove('d-none');
+                    }
+                });
+        }, 250);
+    });
+}
+
+function selectCitizenFromNina(id, nom, nina, tel, vehicule, adresse, commune) {
+    if (inputNinaId) inputNinaId.value = id;
+
+    if (selectedBox && selectedName && selectedInfo) {
+        selectedName.textContent = nom;
+        selectedInfo.textContent = `N° NINA: ${nina} | Téléphone: ${tel} | Commune: ${commune}`;
+        selectedBox.classList.remove('d-none');
+    }
+    
+    const fieldVehicule = document.getElementById('id_immatriculation_vehicule');
+    const fieldAdresse = document.getElementById('id_lieu_adresse');
+    const fieldCommune = document.getElementById('id_commune');
+    
+    if (fieldVehicule && vehicule) fieldVehicule.value = vehicule;
+    if (fieldAdresse && adresse) fieldAdresse.value = adresse;
+
+    if (fieldCommune && commune) {
+        for (let i = 0; i < fieldCommune.options.length; i++) {
+            if (fieldCommune.options[i].text.toLowerCase().includes(commune.toLowerCase())) {
+                fieldCommune.selectedIndex = i;
+                break;
+            }
+        }
+    }
+
+    if (resultsBox) resultsBox.classList.add('d-none');
+    if (inputSearch) inputSearch.value = nom + ' (' + nina + ')';
+}
+
+function clearCitizenSelection() {
+    if (inputNinaId) inputNinaId.value = '';
+    if (selectedBox) selectedBox.classList.add('d-none');
+    if (inputSearch) inputSearch.value = '';
+}
+</script>
+{% endblock %}

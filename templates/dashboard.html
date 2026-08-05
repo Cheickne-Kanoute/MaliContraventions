@@ -1,0 +1,388 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de Bord - Mali Contraventions{% endblock %}
+
+{% block content %}
+<!-- Welcome Header Banner -->
+<div class="card card-custom bg-success text-white p-4 mb-4" style="background: linear-gradient(135deg, #008751 0%, #005231 100%);">
+    <div class="d-md-flex align-items-center justify-content-between">
+        <div class="mb-3 mb-md-0">
+            <div class="mb-2">
+                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold shadow-sm d-inline-flex align-items-center gap-1">
+                    <i class="fa-solid fa-user-shield me-1"></i> ESPACE {{ user.get_role_display|upper }}
+                </span>
+            </div>
+            <h2 class="fw-extrabold mb-1 text-white">Bienvenue, {{ user.get_full_name_or_username }} !</h2>
+            <p class="mb-0 text-white-50 fs-6">
+                {% if role_view == 'ADMIN' %}
+                    Supervision globale de la sécurité routière et suivi des encaissements au Mali.
+                {% elif role_view == 'AGENT' %}
+                    Unité de Verbalisation : {{ user.service_agent|default:"Police Nationale / CCR" }} (Matricule: {{ user.badge_agent|default:"N/A" }})
+                {% else %}
+                    Gestion de vos infractions routières et paiement sécurisé de vos amendes.
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            {% if role_view == 'AGENT' or role_view == 'ADMIN' %}
+            <a href="{% url 'contravention_create' %}" class="btn btn-gold shadow-sm px-4 py-2">
+                <i class="fa-solid fa-plus-circle me-2"></i> Établir un PV
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if role_view == 'ADMIN' %}
+<!-- ADMIN STATS CARDS -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3">
+                    <i class="fa-solid fa-file-invoice"></i>
+                </div>
+                <div>
+                    <span class="text-muted small fw-bold text-uppercase">Total PV</span>
+                    <h3 class="fw-bold mb-0 text-dark">{{ total_contraventions }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning me-3">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                </div>
+                <div>
+                    <span class="text-muted small fw-bold text-uppercase">En Attente</span>
+                    <h3 class="fw-bold mb-0 text-warning">{{ en_attente }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-success bg-opacity-10 text-success me-3">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div>
+                    <span class="text-muted small fw-bold text-uppercase">Total Payées</span>
+                    <h3 class="fw-bold mb-0 text-success">{{ payees }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-success text-white me-3">
+                    <i class="fa-solid fa-sack-dollar"></i>
+                </div>
+                <div>
+                    <span class="text-muted small fw-bold text-uppercase">Recettes</span>
+                    <h3 class="fw-bold mb-0 text-success">{{ total_recettes|floatformat:0 }} FCFA</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Recent Contraventions Table -->
+    <div class="col-lg-8">
+        <div class="card card-custom p-3 p-md-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-clock-rotate-left text-success me-2"></i>Dernières Contraventions</h5>
+                <span class="badge bg-light text-dark border">{{ contraventions_recentes|length }} récent(s)</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.86rem;">
+                    <thead class="table-light text-muted small text-uppercase">
+                        <tr>
+                            <th class="ps-2 text-nowrap" style="width: 120px;">N° PV</th>
+                            <th class="text-nowrap">Citoyen (Contrevenant)</th>
+                            <th class="text-nowrap">Agent Verbalisateur</th>
+                            <th class="text-nowrap">Véhicule</th>
+                            <th class="text-nowrap">Infraction</th>
+                            <th class="text-nowrap">Montant</th>
+                            <th class="text-nowrap">Statut</th>
+                            <th class="text-end pe-2 text-nowrap">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ctr in contraventions_recentes %}
+                        <tr>
+                            <td class="ps-2 text-nowrap">
+                                <a href="{% url 'contravention_detail' ctr.pk %}" class="fw-bold text-dark text-decoration-none">
+                                    <span class="badge bg-dark font-monospace px-2 py-1 fs-7">{{ ctr.numero }}</span>
+                                </a>
+                                <small class="d-block text-muted" style="font-size: 0.7rem;">{{ ctr.date_contravention|date:"d/m/Y H:i" }}</small>
+                            </td>
+                            <td class="text-nowrap">
+                                <span class="fw-bold text-dark d-block">
+                                    <i class="fa-solid fa-user text-success me-1"></i>{{ ctr.nom_citoyen_affiche }}
+                                </span>
+                            </td>
+                            <td class="text-nowrap">
+                                <span class="fw-bold text-dark d-block">
+                                    {% if ctr.agent %}
+                                        <i class="fa-solid fa-user-ninja text-warning me-1"></i>{{ ctr.agent.get_full_name_or_username }}
+                                    {% else %}
+                                        <span class="text-muted fst-italic">N/A</span>
+                                    {% endif %}
+                                </span>
+                                {% if ctr.agent.badge_agent %}
+                                    <small class="text-muted" style="font-size: 0.7rem;">Badge: {{ ctr.agent.badge_agent }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-nowrap">
+                                <span class="fw-bold text-uppercase text-dark d-block">{{ ctr.immatriculation_vehicule }}</span>
+                                <small class="text-muted">{{ ctr.get_type_vehicule_display }}</small>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark text-truncate" style="max-width: 180px;" title="{{ ctr.infraction.libelle }}">{{ ctr.infraction.libelle }}</div>
+                                <small class="text-muted">{{ ctr.commune }}</small>
+                            </td>
+                            <td class="fw-bold text-dark text-nowrap">{{ ctr.montant|floatformat:0 }} FCFA</td>
+                            <td class="text-nowrap">
+                                {% if ctr.statut == 'EN_ATTENTE' %}
+                                    <span class="badge bg-warning text-dark px-2 py-1"><i class="fa-solid fa-hourglass-start me-1"></i>En attente</span>
+                                {% elif ctr.statut == 'VALIDEE' %}
+                                    <span class="badge bg-primary px-2 py-1"><i class="fa-solid fa-circle-exclamation me-1"></i>Validée</span>
+                                {% elif ctr.statut == 'PAYEE' %}
+                                    <span class="badge bg-success px-2 py-1"><i class="fa-solid fa-circle-check me-1"></i>Payée</span>
+                                {% else %}
+                                    <span class="badge bg-danger px-2 py-1"><i class="fa-solid fa-xmark me-1"></i>Annulée</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-2 text-nowrap">
+                                <a href="{% url 'contravention_detail' ctr.pk %}" class="btn btn-sm btn-outline-primary px-2 py-1" title="Consulter le PV">
+                                    <i class="fa-solid fa-eye me-1"></i>Voir
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" class="text-center text-muted py-4">Aucune contravention enregistrée.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Commune breakdown sidebar -->
+    <div class="col-lg-4">
+        <div class="card card-custom p-3 p-md-4 mb-4">
+            <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-map-location-dot text-success me-2"></i>Répartition par Commune</h5>
+            <div class="list-group list-group-flush">
+                {% for item in repartition_communes %}
+                <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent border-bottom px-0 py-2">
+                    <span class="fw-semibold text-dark small"><i class="fa-solid fa-location-dot text-danger me-2"></i>{{ item.commune }}</span>
+                    <span class="badge bg-success rounded-pill px-3 py-1">{{ item.count }} PV</span>
+                </div>
+                {% empty %}
+                <p class="text-muted small">Aucune donnée géographique disponible.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% elif role_view == 'AGENT' %}
+<!-- AGENT STATS CARDS -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card card-custom p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3"><i class="fa-solid fa-pen-nib"></i></div>
+                <div>
+                    <span class="text-muted small fw-bold text-uppercase">PV Mes Saisies</span>
+                    <h3 class="fw-bold mb-0">{{ total_creees }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning me-3"><i class="fa-solid fa-clock"></i></div>
+                <div>
+                    <span class="text-muted small fw-bold text-uppercase">En Attente</span>
+                    <h3 class="fw-bold mb-0 text-warning">{{ en_attente }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-success bg-opacity-10 text-success me-3"><i class="fa-solid fa-check-circle"></i></div>
+                <div>
+                    <span class="text-muted small fw-bold text-uppercase">PV Payés</span>
+                    <h3 class="fw-bold mb-0 text-success">{{ payees }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-custom p-3 p-md-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-list text-success me-2"></i>Mes Dernières Verbalisations</h5>
+        <a href="{% url 'contravention_create' %}" class="btn btn-mali btn-sm px-3"><i class="fa-solid fa-plus me-1"></i> Nouveau PV</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.86rem;">
+            <thead class="table-light text-muted small text-uppercase">
+                <tr>
+                    <th class="ps-2 text-nowrap" style="width: 130px;">N° PV</th>
+                    <th class="text-nowrap">Citoyen / Véhicule</th>
+                    <th class="text-nowrap">Infraction & Lieu</th>
+                    <th class="text-nowrap" style="width: 110px;">Montant</th>
+                    <th class="text-nowrap" style="width: 100px;">Statut</th>
+                    <th class="text-end pe-2 text-nowrap" style="width: 70px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ctr in contraventions_recentes %}
+                <tr>
+                    <td class="ps-2 text-nowrap">
+                        <span class="badge bg-dark font-monospace px-2 py-1 fs-7">{{ ctr.numero }}</span>
+                    </td>
+                    <td class="text-nowrap">
+                        <div class="fw-bold text-dark">{{ ctr.citoyen.get_full_name_or_username|default:"Non renseigné" }}</div>
+                        <span class="badge bg-secondary">{{ ctr.immatriculation_vehicule }}</span>
+                    </td>
+                    <td>
+                        <div class="fw-semibold text-truncate" style="max-width: 200px;" title="{{ ctr.infraction.libelle }}">{{ ctr.infraction.libelle }}</div>
+                        <small class="text-muted">{{ ctr.lieu_adresse }} ({{ ctr.commune }})</small>
+                    </td>
+                    <td class="fw-bold text-nowrap">{{ ctr.montant|floatformat:0 }} FCFA</td>
+                    <td class="text-nowrap">
+                        {% if ctr.statut == 'EN_ATTENTE' %}
+                            <span class="badge bg-warning text-dark px-2 py-1">En attente</span>
+                        {% elif ctr.statut == 'VALIDEE' %}
+                            <span class="badge bg-primary px-2 py-1">Validée</span>
+                        {% elif ctr.statut == 'PAYEE' %}
+                            <span class="badge bg-success px-2 py-1">Payée</span>
+                        {% else %}
+                            <span class="badge bg-danger px-2 py-1">Annulée</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-2 text-nowrap">
+                        <a href="{% url 'contravention_detail' ctr.pk %}" class="btn btn-sm btn-outline-primary px-2 py-1">Consulter</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted py-4">Vous n'avez pas encore saisi de verbalisation.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% else %}
+<!-- CITOYEN STATS CARDS -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card card-custom p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3"><i class="fa-solid fa-folder-open"></i></div>
+                <div>
+                    <span class="text-muted small fw-bold text-uppercase">Mes Contraventions</span>
+                    <h3 class="fw-bold mb-0">{{ total_fines }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-danger bg-opacity-10 text-danger me-3"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div>
+                    <span class="text-muted small fw-bold text-uppercase">Reste à Payer</span>
+                    <h3 class="fw-bold mb-0 text-danger">{{ montant_du|floatformat:0 }} FCFA</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-success bg-opacity-10 text-success me-3"><i class="fa-solid fa-receipt"></i></div>
+                <div>
+                    <span class="text-muted small fw-bold text-uppercase">Total Acquitté</span>
+                    <h3 class="fw-bold mb-0 text-success">{{ total_paye|floatformat:0 }} FCFA</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-custom p-3 p-md-4">
+    <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-list-ol text-success me-2"></i>Historique de vos Contraventions Routières</h5>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.86rem;">
+            <thead class="table-light text-muted small text-uppercase">
+                <tr>
+                    <th class="ps-2 text-nowrap" style="width: 130px;">N° PV</th>
+                    <th class="text-nowrap">Motif Infraction</th>
+                    <th class="text-nowrap">Véhicule & Date</th>
+                    <th class="text-nowrap" style="width: 110px;">Montant Amende</th>
+                    <th class="text-nowrap" style="width: 100px;">Statut</th>
+                    <th class="text-end pe-2 text-nowrap" style="width: 130px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ctr in mes_contraventions %}
+                <tr>
+                    <td class="ps-2 text-nowrap">
+                        <span class="badge bg-dark font-monospace px-2 py-1 fs-7">{{ ctr.numero }}</span>
+                    </td>
+                    <td>
+                        <div class="fw-semibold text-dark text-truncate" style="max-width: 220px;" title="{{ ctr.infraction.libelle }}">{{ ctr.infraction.libelle }}</div>
+                        <small class="text-muted">{{ ctr.lieu_adresse }}</small>
+                    </td>
+                    <td class="text-nowrap">
+                        <div class="fw-bold text-uppercase">{{ ctr.immatriculation_vehicule }}</div>
+                        <small class="text-muted">{{ ctr.date_contravention|date:"d/m/Y H:i" }}</small>
+                    </td>
+                    <td class="fw-bold text-danger text-nowrap">{{ ctr.montant|floatformat:0 }} FCFA</td>
+                    <td class="text-nowrap">
+                        {% if ctr.statut == 'EN_ATTENTE' %}
+                            <span class="badge bg-warning text-dark px-2 py-1"><i class="fa-solid fa-clock me-1"></i>En attente</span>
+                        {% elif ctr.statut == 'VALIDEE' %}
+                            <span class="badge bg-danger px-2 py-1"><i class="fa-solid fa-exclamation-circle me-1"></i>À Payer</span>
+                        {% elif ctr.statut == 'PAYEE' %}
+                            <span class="badge bg-success px-2 py-1"><i class="fa-solid fa-circle-check me-1"></i>Payée (Acquittée)</span>
+                        {% else %}
+                            <span class="badge bg-secondary px-2 py-1"><i class="fa-solid fa-ban me-1"></i>Annulée</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-2 text-nowrap">
+                        {% if ctr.statut == 'VALIDEE' %}
+                            <a href="{% url 'contravention_detail' ctr.pk %}" class="btn btn-mali btn-sm px-2 py-1 shadow-sm">
+                                <i class="fa-solid fa-credit-card me-1"></i> Payer
+                            </a>
+                        {% else %}
+                            <a href="{% url 'contravention_detail' ctr.pk %}" class="btn btn-outline-primary btn-sm px-2 py-1">
+                                <i class="fa-solid fa-eye me-1"></i>Voir
+                            </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted py-4">Félicitations ! Aucune contravention enregistrée à votre nom.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

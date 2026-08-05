@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Mes Notifications - Mali Contraventions{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h3 class="fw-bold text-dark mb-0"><i class="fa-solid fa-bell text-warning me-2"></i>Centre de Notifications</h3>
+                <p class="text-muted small mb-0">Historique des alertes et confirmations de votre compte</p>
+            </div>
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-3 py-2 fs-6 rounded-pill">
+                {{ notifications.count }} notification(s)
+            </span>
+        </div>
+
+        <div class="card card-custom p-0 overflow-hidden shadow-sm">
+            <div class="list-group list-group-flush">
+                {% for n in notifications %}
+                <div class="list-group-item p-3 {% if not n.lue %}bg-warning bg-opacity-10{% endif %}">
+                    <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                        <h6 class="mb-0 fw-bold text-dark">
+                            <i class="fa-solid fa-circle-info text-info me-2"></i>{{ n.titre }}
+                        </h6>
+                        <small class="text-muted" style="font-size: 0.75rem;">
+                            <i class="fa-regular fa-clock me-1"></i>{{ n.date_creation|date:"d/m/Y à H:i" }}
+                        </small>
+                    </div>
+                    <p class="mb-1 text-secondary" style="font-size: 0.88rem;">{{ n.message }}</p>
+                </div>
+                {% empty %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-regular fa-bell-slash fs-1 text-secondary mb-3 d-block"></i>
+                    <p class="mb-0">Vous n'avez aucune notification pour le moment.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

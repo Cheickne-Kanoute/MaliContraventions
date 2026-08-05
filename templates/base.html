@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gestion des Contraventions Routières - Mali{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --mali-green: #008751;
+            --mali-green-dark: #00663d;
+            --mali-gold: #FCD116;
+            --mali-red: #CE1126;
+            --bg-light: #F4F6F9;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-light);
+            color: #2D3748;
+            overflow-x: hidden;
+        }
+
+        .max-width-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        /* Top Tricolor Bar */
+        .mali-flag-bar {
+            height: 5px;
+            background: linear-gradient(to right, #008751 33.33%, #FCD116 33.33%, #FCD116 66.66%, #CE1126 66.66%);
+        }
+
+        .navbar-custom {
+            background-color: #ffffff;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+            padding: 0.5rem 1rem;
+        }
+
+        .navbar-custom .nav-link {
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .navbar-custom .btn {
+            white-space: nowrap;
+        }
+
+        .brand-text {
+            font-weight: 800;
+            color: var(--mali-green-dark);
+            letter-spacing: -0.5px;
+            white-space: nowrap;
+        }
+
+        .badge-role {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.45em 0.8em;
+            border-radius: 30px;
+            text-transform: uppercase;
+        }
+
+        .badge-admin { background-color: #EBF8FF; color: #2B6CB0; border: 1px solid #BEE3F8; }
+        .badge-agent { background-color: #FEFCBF; color: #744210; border: 1px solid #FAF089; }
+        .badge-citoyen { background-color: #F0FFF4; color: #22543D; border: 1px solid #C6F6D5; }
+
+        .card-custom {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            background: #ffffff;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+
+        .stat-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .btn-mali {
+            background-color: var(--mali-green);
+            color: #ffffff;
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 0.6rem 1.4rem;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-mali:hover {
+            background-color: var(--mali-green-dark);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0,135,81,0.3);
+        }
+
+        .btn-gold {
+            background-color: var(--mali-gold);
+            color: #1A202C;
+            font-weight: 700;
+            border-radius: 10px;
+            border: none;
+        }
+
+        .btn-gold:hover {
+            background-color: #e5bd0c;
+            color: #1A202C;
+        }
+
+        .table-custom {
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        .table-custom tbody tr {
+            background: #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            border-radius: 10px;
+        }
+
+        .table-custom tbody tr td:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
+        .table-custom tbody tr td:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
+
+        .footer-custom {
+            background-color: #ffffff;
+            border-top: 1px solid #E2E8F0;
+            padding: 1.5rem 0;
+            margin-top: 4rem;
+            font-size: 0.9rem;
+            color: #718096;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="mali-flag-bar"></div>
+
+    <nav class="navbar navbar-expand-xl navbar-custom sticky-top">
+        <div class="container-fluid max-width-container">
+            {% if user.is_authenticated %}
+            <button class="btn btn-light border me-2 text-dark px-2 py-1 shadow-sm rounded-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas" title="Menu de Navigation">
+                <i class="fa-solid fa-bars fs-5"></i>
+            </button>
+            {% endif %}
+
+            <a class="navbar-brand d-flex align-items-center gap-2 me-2" href="{% url 'dashboard' %}">
+                <i class="fa-solid fa-shield-halved text-success fs-4"></i>
+                <div>
+                    <span class="brand-text d-block lh-1 fs-6">MALI CONTRAVENTIONS</span>
+                    <small class="text-muted fw-semibold d-none d-xl-block" style="font-size: 0.62rem; letter-spacing: 0.5px;">RÉPUBLIQUE DU MALI • POLICE NATIONALE</small>
+                </div>
+            </a>
+            
+            <button class="navbar-toggler border-0 py-1 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarMain">
+                {% if user.is_authenticated %}
+
+                <div class="d-flex align-items-center gap-2 ms-auto pt-2 pt-xl-0">
+                    <!-- Notification Bell -->
+                    <a href="{% url 'notifications_list' %}" class="btn btn-light border position-relative text-dark px-2 py-1 me-1 rounded-3" title="Centre de Notifications">
+                        <i class="fa-solid fa-bell text-warning fs-6"></i>
+                        {% if unread_notifications_count > 0 %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
+                            {{ unread_notifications_count }}
+                        </span>
+                        {% endif %}
+                    </a>
+
+                    <div class="text-end d-none d-sm-block text-nowrap">
+                        <div class="fw-bold text-dark" style="font-size: 0.85rem;">{{ user.get_full_name_or_username }}</div>
+                        <span class="badge badge-role 
+                            {% if user.is_admin_role %}badge-admin
+                            {% elif user.is_agent_role %}badge-agent
+                            {% else %}badge-citoyen{% endif %}" style="font-size: 0.68rem;">
+                            {{ user.get_role_display }}
+                        </span>
+                    </div>
+
+                    <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-semibold text-nowrap d-inline-flex align-items-center gap-1">
+                        <i class="fa-solid fa-arrow-right-from-bracket me-1"></i> Déconnexion
+                    </a>
+                </div>
+                {% else %}
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <a href="{% url 'verifier_pv' %}" class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold text-nowrap" style="font-size: 0.85rem;">
+                        <i class="fa-solid fa-barcode me-1"></i> Vérifier un PV
+                    </a>
+                    <a href="{% url 'login' %}" class="btn btn-outline-success rounded-pill px-4 fw-semibold">Connexion</a>
+                    <a href="{% url 'register' %}" class="btn btn-mali rounded-pill px-4">Inscription Citoyen</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- OFFCANVAS SIDEBAR NAVIGATION -->
+    {% if user.is_authenticated %}
+    <div class="offcanvas offcanvas-start border-0 shadow-lg" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel" style="width: 295px;">
+        <div class="offcanvas-header bg-success text-white position-relative" style="background: linear-gradient(135deg, #008751 0%, #005231 100%);">
+            <div class="position-absolute top-0 start-0 end-0" style="height: 4px; background: linear-gradient(to right, #008751 33.33%, #FCD116 33.33%, #FCD116 66.66%, #CE1126 66.66%);"></div>
+            <div class="d-flex align-items-center gap-2 mt-1">
+                <i class="fa-solid fa-shield-halved fs-4 text-warning"></i>
+                <div>
+                    <h6 class="fw-bold mb-0 text-white" id="sidebarOffcanvasLabel">MALI CONTRAVENTIONS</h6>
+                    <small class="text-white-50" style="font-size: 0.65rem;">SÉCURITÉ ROUTIÈRE</small>
+                </div>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0 d-flex flex-column justify-content-between">
+            <div>
+                <div class="p-3 bg-light border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-5" style="width: 44px; height: 44px;">
+                            {{ user.username|slice:":1"|upper }}
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark fs-6">{{ user.get_full_name_or_username }}</div>
+                            <span class="badge badge-role 
+                                {% if user.is_admin_role %}badge-admin
+                                {% elif user.is_agent_role %}badge-agent
+                                {% else %}badge-citoyen{% endif %}">
+                                {{ user.get_role_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3">
+                    <small class="text-muted text-uppercase fw-bold d-block mb-2 px-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">Navigation Principale</small>
+                    <div class="nav flex-column gap-1">
+                        <a href="{% url 'dashboard' %}" class="nav-link fw-semibold text-dark rounded-3 px-3 py-2 d-flex align-items-center">
+                            <i class="fa-solid fa-chart-pie me-2 text-success" style="width: 20px;"></i> Tableau de Bord
+                        </a>
+
+                        {% if user.is_admin_role or user.is_agent_role %}
+                        <a href="{% url 'contravention_create' %}" class="nav-link fw-semibold text-dark rounded-3 px-3 py-2 d-flex align-items-center">
+                            <i class="fa-solid fa-file-circle-plus me-2 text-warning" style="width: 20px;"></i> Établir un PV (Verbaliser)
+                        </a>
+                        {% endif %}
+
+                        <a href="{% url 'infractions_list' %}" class="nav-link fw-semibold text-dark rounded-3 px-3 py-2 d-flex align-items-center">
+                            <i class="fa-solid fa-list-check me-2 text-primary" style="width: 20px;"></i> Catalogue Infractions
+                        </a>
+
+                        {% if user.is_admin_role or user.is_agent_role %}
+                        <a href="{% url 'registre_nina_list' %}" class="nav-link fw-semibold text-dark rounded-3 px-3 py-2 d-flex align-items-center">
+                            <i class="fa-solid fa-address-card me-2 text-info" style="width: 20px;"></i> Registre NINA Mali (3 000)
+                        </a>
+                        <a href="{% url 'statistiques' %}" class="nav-link fw-semibold text-dark rounded-3 px-3 py-2 d-flex align-items-center">
+                            <i class="fa-solid fa-chart-line me-2 text-success" style="width: 20px;"></i> Statistiques & Rapports
+                        </a>
+                        {% endif %}
+
+                        <a href="{% url 'notifications_list' %}" class="nav-link fw-semibold text-dark rounded-3 px-3 py-2 d-flex align-items-center">
+                            <i class="fa-solid fa-bell me-2 text-warning" style="width: 20px;"></i> Notifications
+                        </a>
+
+                        <a href="{% url 'verifier_pv' %}" class="nav-link fw-semibold text-dark rounded-3 px-3 py-2 d-flex align-items-center">
+                            <i class="fa-solid fa-barcode me-2 text-secondary" style="width: 20px;"></i> Portail de Vérification PV
+                        </a>
+
+                        {% if user.is_admin_role %}
+                        <a href="{% url 'agents_list' %}" class="nav-link fw-semibold text-dark rounded-3 px-3 py-2 d-flex align-items-center">
+                            <i class="fa-solid fa-user-shield me-2 text-danger" style="width: 20px;"></i> Gestion des Agents
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 border-top bg-light">
+                <a href="{% url 'logout' %}" class="btn btn-outline-danger w-100 rounded-pill py-2 fw-semibold">
+                    <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Se Déconnecter
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <main class="container-fluid max-width-container py-4">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" role="alert">
+                    <i class="fa-solid 
+                        {% if message.tags == 'success' %}fa-circle-check text-success
+                        {% elif message.tags == 'error' or message.tags == 'danger' %}fa-triangle-exclamation text-danger
+                        {% else %}fa-circle-info text-info{% endif %} me-2 fs-5"></i>
+                    <strong class="me-1">{{ message }}</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer-custom text-center">
+        <div class="container">
+            <p class="mb-1 fw-semibold text-dark">République du Mali • Ministère de la Sécurité et de la Protection Civile</p>
+            <p class="mb-0 text-muted fs-7">Plateforme Nationale de Gestion et de Traitement des Contraventions Routières &copy; 2026. Projet Tutoré Licence MIAGE.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

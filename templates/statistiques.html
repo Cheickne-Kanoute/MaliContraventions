@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Statistiques & Rapports - Mali Contraventions{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
+    <div>
+        <h3 class="fw-bold text-dark mb-0"><i class="fa-solid fa-chart-line text-success me-2"></i>Statistiques & Reporting Financier</h3>
+        <small class="text-muted">Analyse des verbalisations, infractions et recettes d'encaissement (Fonctionnement 100% Hors-Ligne)</small>
+    </div>
+    <a href="{% url 'export_contraventions_csv' %}" class="btn btn-success fw-bold px-4 py-2 rounded-pill shadow-sm">
+        <i class="fa-solid fa-file-csv me-2"></i> Exporter le Rapport CSV (Excel)
+    </a>
+</div>
+
+<!-- Stat KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom p-3 border-start border-4 border-success">
+            <small class="text-muted text-uppercase fw-bold" style="font-size: 0.72rem;">Recettes Encaissées</small>
+            <h4 class="fw-extrabold text-success mb-0 mt-1">{{ total_recettes|floatformat:0 }} FCFA</h4>
+            <small class="text-muted" style="font-size: 0.7rem;">Paiements Mobile Money confirmés</small>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom p-3 border-start border-4 border-primary">
+            <small class="text-muted text-uppercase fw-bold" style="font-size: 0.72rem;">Total PV Établis</small>
+            <h4 class="fw-extrabold text-dark mb-0 mt-1">{{ total_pv }}</h4>
+            <small class="text-muted" style="font-size: 0.7rem;">Sur tout le territoire national</small>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom p-3 border-start border-4 border-info">
+            <small class="text-muted text-uppercase fw-bold" style="font-size: 0.72rem;">PV Validés / Reglés</small>
+            <h4 class="fw-extrabold text-info mb-0 mt-1">{{ total_payees|add:total_validees }}</h4>
+            <small class="text-muted" style="font-size: 0.7rem;">PV conformes après vérification</small>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom p-3 border-start border-4 border-warning">
+            <small class="text-muted text-uppercase fw-bold" style="font-size: 0.72rem;">PV En Attente Agent</small>
+            <h4 class="fw-extrabold text-warning mb-0 mt-1">{{ total_en_attente }}</h4>
+            <small class="text-muted" style="font-size: 0.7rem;">En attente de validation admin</small>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Repartition par Commune -->
+    <div class="col-lg-6">
+        <div class="card card-custom p-4 h-100">
+            <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-location-dot text-danger me-2"></i>Répartition des Infractions par Commune</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+                    <thead class="table-light text-muted small text-uppercase">
+                        <tr>
+                            <th>Commune / Zone</th>
+                            <th class="text-center">Nombre de PV</th>
+                            <th class="text-end">Montant Total FCFA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in repartition_communes %}
+                        <tr>
+                            <td class="fw-semibold text-dark">{{ item.commune }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary font-monospace px-2 py-1">{{ item.count }}</span>
+                            </td>
+                            <td class="text-end fw-bold text-success">{{ item.total_montant|floatformat:0 }} FCFA</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center text-muted py-3">Aucune donnée disponible</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Repartition par Type de Vehicule -->
+    <div class="col-lg-6">
+        <div class="card card-custom p-4 h-100">
+            <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-car text-primary me-2"></i>Répartition par Type de Véhicule</h5>
+            <div class="d-flex flex-column gap-3">
+                {% for item in repartition_vehicules %}
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 0.85rem;">
+                        <span class="fw-bold text-dark">{{ item.type_vehicule }}</span>
+                        <span class="fw-bold text-secondary">{{ item.count }} PV</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {% if total_pv > 0 %}{% widthratio item.count total_pv 100 %}{% else %}0{% endif %}%;"></div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted small">Aucune donnée de véhicule enregistrée</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
