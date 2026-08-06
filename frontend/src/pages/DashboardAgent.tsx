@@ -13,24 +13,8 @@ import {
   Menu
 } from 'lucide-react';
 
-interface Contravention {
-    id: number;
-    numero: string;
-    date_contravention: string;
-    immatriculation_vehicule: string;
-    montant: number;
-    statut: string;
-    commune: string;
-    citoyen_details?: any;
-    infraction_details?: any;
-}
-
-interface Infraction {
-    id: number;
-    code: string;
-    libelle: string;
-    montant: number;
-}
+import { contraventionsService } from '../services/contraventionsService';
+import type { Contravention, Infraction } from '../types';
 
 const DashboardAgent = () => {
     const navigate = useNavigate();
@@ -49,8 +33,7 @@ const DashboardAgent = () => {
     const { data: contraventions = [], isLoading } = useQuery<Contravention[]>({
         queryKey: ['agentContraventions'],
         queryFn: async () => {
-            const res = await api.get('/api/contraventions/');
-            return res.data;
+            return await contraventionsService.getAll();
         }
     });
 
@@ -136,11 +119,11 @@ const DashboardAgent = () => {
                 </div>
                 <div className="flex-1 overflow-y-auto py-4">
                     <nav className="space-y-1 px-3">
-                        <a href="#" className="flex items-center px-3 py-2.5 bg-blue-800 text-white rounded-lg">
+                        <button onClick={() => setIsMobileMenuOpen(false)} className="w-full flex items-center px-3 py-2.5 bg-blue-800 text-white rounded-lg">
                             <LayoutDashboard className="w-5 h-5 mr-3" />
                             Mon Tableau de bord
-                        </a>
-                        <button onClick={() => setIsModalOpen(true)} className="w-full flex items-center px-3 py-2.5 text-blue-200 hover:bg-blue-800 hover:text-white rounded-lg transition-colors">
+                        </button>
+                        <button onClick={() => { setIsModalOpen(true); setIsMobileMenuOpen(false); }} className="w-full flex items-center px-3 py-2.5 text-blue-200 hover:bg-blue-800 hover:text-white rounded-lg transition-colors">
                             <PlusCircle className="w-5 h-5 mr-3" />
                             Dresser un PV
                         </button>
@@ -267,7 +250,7 @@ const DashboardAgent = () => {
                                 >
                                     <option value="">Sélectionnez une infraction</option>
                                     {infractions.map(inf => (
-                                        <option key={inf.id} value={inf.id}>{inf.libelle} ({inf.montant} FCFA)</option>
+                                        <option key={inf.id} value={inf.id}>{inf.libelle} ({inf.montant_amende} FCFA)</option>
                                     ))}
                                 </select>
                             </div>

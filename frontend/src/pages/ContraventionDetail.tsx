@@ -1,6 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import QRCode from 'react-qr-code';
 import api from '../api/axios';
+import { contraventionsService } from '../services/contraventionsService';
+import { usersService } from '../services/usersService';
+import type { Contravention, User } from '../types';
 import { ArrowLeft, FileText, Download, CheckCircle, AlertCircle, XCircle, CreditCard } from 'lucide-react';
 
 const ContraventionDetail = () => {
@@ -11,16 +15,15 @@ const ContraventionDetail = () => {
     const { data: user } = useQuery({
         queryKey: ['me'],
         queryFn: async () => {
-            const res = await api.get('/api/utilisateurs/');
-            return res.data[0]; // Assuming the viewset returns the current user in a list
+            const users = await usersService.getAll();
+            return users[0] as User; // Assuming the viewset returns the current user in a list
         }
     });
 
-    const { data: contravention, isLoading, error } = useQuery({
+    const { data: contravention, isLoading, error } = useQuery<Contravention>({
         queryKey: ['contravention', id],
         queryFn: async () => {
-            const res = await api.get(`/api/contraventions/${id}/`);
-            return res.data;
+            return await contraventionsService.getById(Number(id));
         }
     });
 
@@ -44,7 +47,7 @@ const ContraventionDetail = () => {
             // Usually we would POST to /api/paiements/
             const res = await api.post(`/api/paiements/`, {
                 contravention: id,
-                montant: contravention.montant,
+                montant: contravention?.montant,
                 reference: `PAY-OM-${Math.floor(Math.random() * 10000000)}`,
                 mode_paiement: 'ORANGE_MONEY'
             });
@@ -115,7 +118,7 @@ const ContraventionDetail = () => {
                             <div>
                                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 mt-6">Infraction</h3>
                                 <p className="text-gray-900 font-medium">{contravention.infraction_details?.libelle}</p>
-                                <p className="text-2xl font-extrabold text-red-600 mt-2">{parseFloat(contravention.montant).toLocaleString('fr-FR')} FCFA</p>
+                                <p className="text-2xl font-extrabold text-red-600 mt-2">{parseFloat(contravention?.montant?.toString() || '0').toLocaleString('fr-FR')} FCFA</p>
                             </div>
 
                             <div>
@@ -181,8 +184,7 @@ const ContraventionDetail = () => {
                             {/* QR Code Placeholder (If actual QR code image is generated, it should be fetched, otherwise we can use a library to generate it, but since the requirement mentions QR code + PDF, PDF contains the QR code, or we can use react-qr-code) */}
                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 mt-6">Vérification QR</h3>
                             <div className="bg-white p-4 inline-block border border-gray-200 rounded-lg shadow-sm">
-                                {/* Normally we'd use a QR code library like react-qr-code here. We just show a placeholder or text for now to indicate it exists. */}
-                                <div className="w-32 h-32 bg-gray-100 flex items-center justify-center text-xs text-gray-400 text-center">QR Code affiché sur le PDF</div>
+                                <QRCode value={`${window.location.origin}/verifier/?q=${contravention.numero}`} size={128} />
                             </div>
                         </div>
                     </div>

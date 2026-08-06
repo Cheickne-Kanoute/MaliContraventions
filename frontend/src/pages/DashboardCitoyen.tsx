@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/axios';
 import { 
   FileText, 
   CreditCard, 
@@ -14,43 +13,27 @@ import {
   Menu,
   X
 } from 'lucide-react';
-
-interface Contravention {
-    id: number;
-    numero: string;
-    date_contravention: string;
-    immatriculation_vehicule: string;
-    montant: number;
-    statut: string;
-    commune: string;
-    agent_details?: any;
-    infraction_details?: any;
-}
+import { useQuery } from '@tanstack/react-query';
+import { contraventionsService } from '../services/contraventionsService';
+import type { Contravention } from '../types';
 
 const DashboardCitoyen = () => {
     const navigate = useNavigate();
-    const [contraventions, setContraventions] = useState<Contravention[]>([]);
-    const [loading, setLoading] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-    useEffect(() => {
-        const fetchDashboardData = async () => {
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const { data: contraventions = [], isLoading: loading } = useQuery<Contravention[]>({
+        queryKey: ['citoyenContraventions'],
+        queryFn: async () => {
             try {
-                // Fetch contraventions (Backend automatically filters for the logged-in citoyen)
-                const res = await api.get('/api/contraventions/');
-                setContraventions(res.data);
+                return await contraventionsService.getAll();
             } catch (error: any) {
                 if (error.response?.status === 401) {
                     navigate('/login?role=citoyen');
                 }
-                console.error("Erreur lors de la récupération des données", error);
-            } finally {
-                setLoading(false);
+                throw error;
             }
-        };
-
-        fetchDashboardData();
-    }, [navigate]);
+        }
+    });
 
     const handleLogout = () => {
         localStorage.removeItem('access_token');
@@ -87,22 +70,22 @@ const DashboardCitoyen = () => {
                 </div>
                 <div className="flex-1 overflow-y-auto py-4">
                     <nav className="space-y-1 px-3">
-                        <a href="#" className="flex items-center px-3 py-2.5 bg-green-800 text-white rounded-lg">
+                        <button onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center px-3 py-2.5 rounded-lg ${activeTab === 'dashboard' ? 'bg-green-800 text-white' : 'text-green-200 hover:bg-green-800 hover:text-white transition-colors'}`}>
                             <User className="w-5 h-5 mr-3" />
                             Mon Tableau de bord
-                        </a>
-                        <a href="#" className="flex items-center px-3 py-2.5 text-green-200 hover:bg-green-800 hover:text-white rounded-lg transition-colors">
+                        </button>
+                        <button onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} className="w-full flex items-center px-3 py-2.5 text-green-200 hover:bg-green-800 hover:text-white rounded-lg transition-colors">
                             <FileText className="w-5 h-5 mr-3" />
                             Mes Contraventions
-                        </a>
-                        <a href="#" className="flex items-center px-3 py-2.5 text-green-200 hover:bg-green-800 hover:text-white rounded-lg transition-colors">
+                        </button>
+                        <button onClick={() => alert("La page de paiement dédiée sera bientôt disponible.")} className="w-full flex items-center px-3 py-2.5 text-green-200 hover:bg-green-800 hover:text-white rounded-lg transition-colors">
                             <CreditCard className="w-5 h-5 mr-3" />
                             Paiements en ligne
-                        </a>
-                        <a href="#" className="flex items-center px-3 py-2.5 text-green-200 hover:bg-green-800 hover:text-white rounded-lg transition-colors">
+                        </button>
+                        <button onClick={() => { setActiveTab('contestations'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center px-3 py-2.5 rounded-lg ${activeTab === 'contestations' ? 'bg-green-800 text-white' : 'text-green-200 hover:bg-green-800 hover:text-white transition-colors'}`}>
                             <AlertTriangle className="w-5 h-5 mr-3" />
                             Mes Contestations
-                        </a>
+                        </button>
                     </nav>
                 </div>
                 <div className="p-4 border-t border-green-800">
@@ -148,9 +131,10 @@ const DashboardCitoyen = () => {
                     </div>
                 </header>
 
-                {/* Dashboard Body */}
-                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
-                    
+                    {/* Dashboard Body */}
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+                        {activeTab === 'dashboard' && (
+                            <>
                     {/* Welcome Banner */}
                     <div className="bg-gradient-to-r from-green-600 to-green-800 rounded-xl p-6 text-white mb-6 shadow-sm">
                         <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-500 text-white text-xs font-bold mb-3 shadow-sm border border-green-400">
@@ -262,7 +246,26 @@ const DashboardCitoyen = () => {
                             </table>
                         </div>
                     </div>
+                    </>
+                    )}
 
+                    {activeTab === 'contestations' && (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                <AlertTriangle className="w-6 h-6 mr-3 text-yellow-500" />
+                                Suivi de vos contestations (Litiges)
+                            </h3>
+                            <p className="text-gray-600 mb-6">
+                                Ici vous pourrez suivre l'état d'avancement des contestations que vous avez soumises. La fonctionnalité de soumission de nouvelles preuves ou contestations est en cours de déploiement final.
+                            </p>
+                            <div className="bg-yellow-50 text-yellow-800 p-4 rounded-lg flex items-start">
+                                <AlertCircle className="w-5 h-5 mr-3 mt-0.5" />
+                                <div className="text-sm">
+                                    <strong>Rappel légal :</strong> Toute contestation non justifiée peut entraîner une majoration de l'amende initiale. Assurez-vous d'avoir des preuves valables (photos, documents) avant d'initier un litige.
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </main>
             </div>
         </div>

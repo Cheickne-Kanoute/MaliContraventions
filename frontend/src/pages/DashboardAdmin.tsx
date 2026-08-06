@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { contraventionsService } from '../services/contraventionsService';
+import { paymentsService } from '../services/paymentsService';
+import { usersService } from '../services/usersService';
+import type { Contravention, User } from '../types';
 import api from '../api/axios';
 import { 
   FileText, 
@@ -34,31 +38,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
-interface Contravention {
-    id: number;
-    numero: string;
-    date_contravention: string;
-    immatriculation_vehicule: string;
-    montant: number;
-    statut: string;
-    commune: string;
-    agent_details?: any;
-    citoyen_details?: any;
-    infraction_details?: any;
-}
+// Fix for default marker icons in Leaflet with bundlers
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
-interface User {
-    id: number;
-    username: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    role: string;
-    telephone: string;
-    badge_agent?: string;
-    nin_carte_identite?: string;
-}
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// Types are imported from ../types
 
 const COLORS = ['#008751', '#FCD116', '#CE1126', '#6b7280'];
 
@@ -72,17 +67,17 @@ const DashboardAdmin = () => {
         queryFn: async () => {
             try {
                 const [resContraventions, resPaiements, resUsers] = await Promise.all([
-                    api.get('/api/contraventions/'),
-                    api.get('/api/paiements/'),
-                    api.get('/api/utilisateurs/')
+                    contraventionsService.getAll(),
+                    paymentsService.getAll(),
+                    usersService.getAll()
                 ]);
 
-                const recettes = resPaiements.data.reduce((sum: number, p: any) => sum + parseFloat(p.montant), 0);
+                const recettes = resPaiements.reduce((sum: number, p: any) => sum + parseFloat(p.montant), 0);
 
                 return {
-                    contraventions: resContraventions.data as Contravention[],
+                    contraventions: resContraventions,
                     totalRecettes: recettes,
-                    users: resUsers.data as User[]
+                    users: resUsers
                 };
             } catch (error: any) {
                 if (error.response?.status === 401) {
@@ -106,6 +101,14 @@ const DashboardAdmin = () => {
 
     // User Modal State
     const [showUserModal, setShowUserModal] = useState(false);
+    const { data: geolocData } = useQuery({
+        queryKey: ['geolocData'],
+        queryFn: async () => {
+            return await contraventionsService.getGeoloc();
+        },
+        enabled: activeTab === 'geolocalisation'
+    });
+
     const [newUser, setNewUser] = useState({
         first_name: '', last_name: '', email: '', password: '', role: 'AGENT', telephone: '', badge_agent: '', nin_carte_identite: ''
     });
@@ -129,9 +132,9 @@ const DashboardAdmin = () => {
 
     // Calculate Stats
     const totalPV = contraventions.length;
-    const enAttente = contraventions.filter(c => c.statut === 'EN_ATTENTE').length;
-    const payees = contraventions.filter(c => c.statut === 'PAYEE').length;
-    const annulees = contraventions.filter(c => c.statut === 'ANNULEE').length;
+    const enAttente = contraventions.filter((c: Contravention) => c.statut === 'EN_ATTENTE').length;
+    const payees = contraventions.filter((c: Contravention) => c.statut === 'PAYEE').length;
+    const annulees = contraventions.filter((c: Contravention) => c.statut === 'ANNULEE').length;
     
     const recentContraventions = [...contraventions].sort((a, b) => b.id - a.id).slice(0, 5);
 
@@ -144,7 +147,7 @@ const DashboardAdmin = () => {
 
     // Data for Bar Chart (Communes)
     const communesCount: Record<string, number> = {};
-    contraventions.forEach(c => {
+    contraventions.forEach((c: Contravention) => {
         const com = c.commune || 'Inconnue';
         communesCount[com] = (communesCount[com] || 0) + 1;
     });
@@ -172,26 +175,26 @@ const DashboardAdmin = () => {
                 </div>
                 <div className="flex-1 overflow-y-auto py-4">
                     <nav className="space-y-1 px-3">
-                        <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'dashboard' ? 'bg-mali-green bg-opacity-20 text-mali-yellow' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
+                        <button onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'dashboard' ? 'bg-mali-green bg-opacity-20 text-mali-yellow' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
                             <LayoutDashboard className="w-5 h-5 mr-3" />
                             Tableau de bord
                         </button>
-                        <button className="w-full flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
+                        <button onClick={() => { setActiveTab('contraventions'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'contraventions' ? 'bg-mali-green bg-opacity-20 text-mali-yellow' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
                             <FileText className="w-5 h-5 mr-3" />
                             Contraventions
                         </button>
-                        <button onClick={() => setActiveTab('utilisateurs')} className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'utilisateurs' ? 'bg-mali-green bg-opacity-20 text-mali-yellow' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
+                        <button onClick={() => { setActiveTab('utilisateurs'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'utilisateurs' ? 'bg-mali-green bg-opacity-20 text-mali-yellow' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
                             <Users className="w-5 h-5 mr-3" />
                             Agents & Citoyens
                         </button>
-                        <a href="#" className="flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
+                        <button onClick={() => { setActiveTab('geolocalisation'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'geolocalisation' ? 'bg-mali-green bg-opacity-20 text-mali-yellow' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
                             <MapPin className="w-5 h-5 mr-3" />
                             Géolocalisation
-                        </a>
-                        <a href="#" className="flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
+                        </button>
+                        <button onClick={() => alert("Les paramètres seront disponibles prochainement.")} className="w-full flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
                             <Settings className="w-5 h-5 mr-3" />
                             Paramètres
-                        </a>
+                        </button>
                     </nav>
                 </div>
                 <div className="p-4 border-t border-gray-700">
@@ -429,7 +432,7 @@ const DashboardAdmin = () => {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody className="divide-y divide-gray-100 text-sm">
-                                            {users.map(u => (
+                                            {users.map((u: User) => (
                                                 <TableRow key={u.id} className="hover:bg-gray-50 transition-colors">
                                                     <TableCell className="font-semibold text-gray-900">{u.first_name} {u.last_name}</TableCell>
                                                     <TableCell className="text-gray-600">{u.email}</TableCell>
@@ -530,6 +533,80 @@ const DashboardAdmin = () => {
                                         </Button>
                                     </div>
                                 </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'contraventions' && (
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-bold text-gray-800">Toutes les Contraventions</h2>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Numéro PV</TableHead>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Immatriculation</TableHead>
+                                            <TableHead>Infraction</TableHead>
+                                            <TableHead>Montant</TableHead>
+                                            <TableHead>Statut</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {dashboardData?.contraventions.map((c: Contravention) => (
+                                            <TableRow 
+                                                key={c.id} 
+                                                className="cursor-pointer hover:bg-gray-50"
+                                                onClick={() => navigate(`/contraventions/${c.id}`)}
+                                            >
+                                                <TableCell className="font-medium">{c.numero}</TableCell>
+                                                <TableCell>{new Date(c.date_contravention).toLocaleDateString()}</TableCell>
+                                                <TableCell>{c.immatriculation_vehicule}</TableCell>
+                                                <TableCell className="truncate max-w-[200px]">{c.infraction_details?.libelle || 'Infraction Code'}</TableCell>
+                                                <TableCell className="font-bold">{c.montant} FCFA</TableCell>
+                                                <TableCell>
+                                                    <Badge className={c.statut === 'EN_ATTENTE' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' : (c.statut === 'PAYE' ? 'bg-green-100 text-green-800 hover:bg-green-100' : 'bg-red-100 text-red-800 hover:bg-red-100')}>
+                                                        {c.statut.replace('_', ' ')}
+                                                    </Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                        {(!dashboardData?.contraventions || dashboardData.contraventions.length === 0) && (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="text-center py-4 text-gray-500">Aucune contravention trouvée</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'geolocalisation' && (
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-[calc(100vh-8rem)] flex flex-col">
+                            <h2 className="text-xl font-bold text-gray-800 mb-4">Carte des Infractions</h2>
+                            <div className="flex-1 rounded-lg overflow-hidden border border-gray-200 relative z-0">
+                                {geolocData && (
+                                    <MapContainer center={[12.6392, -8.0029]} zoom={12} style={{ height: '100%', width: '100%' }}>
+                                        <TileLayer
+                                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                                        />
+                                        {geolocData.map((loc: any, idx: number) => (
+                                            <Marker key={idx} position={[loc.lat, loc.lng]}>
+                                                <Popup>
+                                                    <div className="text-sm">
+                                                        <p className="font-bold">{loc.numero}</p>
+                                                        <p>{loc.infraction}</p>
+                                                        <p className="text-gray-600">{loc.date} - {loc.montant} FCFA</p>
+                                                    </div>
+                                                </Popup>
+                                            </Marker>
+                                        ))}
+                                    </MapContainer>
+                                )}
                             </div>
                         </div>
                     )}

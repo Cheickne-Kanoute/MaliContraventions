@@ -1,6 +1,8 @@
 from rest_framework import viewsets, permissions
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from django.utils.crypto import get_random_string
-from .models import Utilisateur, Infraction, Contravention, Paiement, Notification
+from .models import Utilisateur, Infraction, Contravention, Paiement, Notification, GPSLocation
 from .serializers import UtilisateurSerializer, InfractionSerializer, ContraventionSerializer, PaiementSerializer
 
 
@@ -11,19 +13,40 @@ class InfractionViewSet(viewsets.ModelViewSet):
 
 
 class ContraventionViewSet(viewsets.ModelViewSet):
-    queryset = Contravention.objects.all()
+    queryset = Contravention.objects.select_related('agent', 'citoyen', 'infraction').all()
     serializer_class = ContraventionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
+        qs = Contravention.objects.select_related('agent', 'citoyen', 'infraction')
         if user.is_admin_role():
-            return Contravention.objects.all()
+            return qs.all()
         elif user.is_agent_role():
-            return Contravention.objects.filter(agent=user)
+            return qs.filter(agent=user)
         elif user.is_citoyen_role():
-            return Contravention.objects.filter(citoyen=user)
-        return Contravention.objects.none()
+            return qs.filter(citoyen=user)
+        return qs.none()
+
+    @action(detail=False, methods=['get'])
+    def geoloc(self, request):
+        user = request.user
+        if not user.is_admin_role() and not user.is_agent_role():
+            return Response({'error': 'Unauthorized'}, status=403)
+            
+        locations = GPSLocation.objects.select_related('contravention', 'contravention__infraction').all()
+        data = []
+        for loc in locations:
+            data.append({
+                'lat': loc.latitude,
+                'lng': loc.longitude,
+                'numero': loc.contravention.numero,
+                'infraction': loc.contravention.infraction.libelle,
+                'montant': loc.contravention.montant,
+                'date': loc.contravention.date_contravention.strftime('%d/%m/%Y'),
+                'statut': loc.contravention.statut
+            })
+        return Response({'locations': data})
 
     def perform_create(self, serializer):
         infraction = serializer.validated_data.get('infraction')
@@ -55,7 +78,7 @@ class ContraventionViewSet(viewsets.ModelViewSet):
 
 
 class PaiementViewSet(viewsets.ModelViewSet):
-    queryset = Paiement.objects.all()
+    queryset = Paiement.objects.select_related('contravention').all()
     serializer_class = PaiementSerializer
     permission_classes = [permissions.IsAuthenticated]
 
