@@ -151,6 +151,7 @@ class Contravention(models.Model):
     
     date_creation = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now=True)
+    photo_preuve = models.ImageField(upload_to='preuves/', null=True, blank=True, verbose_name="Preuve photographique")
 
     @property
     def nom_citoyen_affiche(self):

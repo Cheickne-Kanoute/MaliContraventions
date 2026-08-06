@@ -1,5 +1,6 @@
 from rest_framework import viewsets, permissions
-from .models import Utilisateur, Infraction, Contravention, Paiement
+from django.utils.crypto import get_random_string
+from .models import Utilisateur, Infraction, Contravention, Paiement, Notification
 from .serializers import UtilisateurSerializer, InfractionSerializer, ContraventionSerializer, PaiementSerializer
 
 
@@ -23,6 +24,34 @@ class ContraventionViewSet(viewsets.ModelViewSet):
         elif user.is_citoyen_role():
             return Contravention.objects.filter(citoyen=user)
         return Contravention.objects.none()
+
+    def perform_create(self, serializer):
+        infraction = serializer.validated_data.get('infraction')
+        numero = f"PV-{get_random_string(8).upper()}"
+        serializer.save(
+            agent=self.request.user,
+            numero=numero,
+            montant=infraction.montant if infraction else 0,
+            statut=Contravention.STATUT_EN_ATTENTE
+        )
+
+    def perform_update(self, serializer):
+        old_statut = self.get_object().statut
+        contravention = serializer.save()
+        if old_statut != contravention.statut and contravention.citoyen:
+            if contravention.statut == Contravention.STATUT_VALIDEE:
+                Notification.objects.create(
+                    utilisateur=contravention.citoyen,
+                    titre=f"Contravention {contravention.numero} Validée",
+                    message=f"Votre contravention N° {contravention.numero} a été validée. Vous pouvez procéder au paiement."
+                )
+            elif contravention.statut == Contravention.STATUT_PAYEE:
+                Notification.objects.create(
+                    utilisateur=contravention.citoyen,
+                    titre=f"Paiement Reçu - {contravention.numero}",
+                    message=f"Le paiement de {contravention.montant} FCFA a été confirmé."
+                )
+
 
 
 class PaiementViewSet(viewsets.ModelViewSet):

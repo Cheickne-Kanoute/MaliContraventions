@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
-import { Shield, ChevronLeft, UserCircle } from 'lucide-react';
+import { ChevronLeft, UserCircle } from 'lucide-react';
 import heroImg from '../assets/hero.png';
 
 const Login = () => {
@@ -50,18 +50,17 @@ const Login = () => {
 
     return (
         <div className="min-h-screen flex font-sans">
-            {/* Left Side (Dark Green / Hero Image) */}
+            {/* Left Side (Dark Green) */}
             <div 
-                className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center p-12 text-white relative bg-mali-dark bg-cover bg-center"
-                style={{ backgroundImage: `linear-gradient(rgba(10, 54, 34, 0.8), rgba(10, 54, 34, 0.9)), url(${heroImg})` }}
+                className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center p-12 text-white relative bg-mali-dark"
             >
                 
                 {/* Logo and Titles */}
                 <div className="flex flex-col items-center mb-16">
                     <div className="bg-mali-green bg-opacity-20 p-4 rounded-full mb-6 border border-mali-green">
-                        <Shield className="w-12 h-12 text-mali-red" />
+                        <img src={heroImg} alt="Armoiries du Mali" className="w-12 h-12 object-contain" />
                     </div>
-                    <h1 className="text-4xl font-bold mb-3">République du Mali</h1>
+                    <h1 className="text-4xl font-bold mb-3 font-serif">République du Mali</h1>
                     <p className="text-gray-300 text-lg">Plateforme de Gestion des Contraventions</p>
                 </div>
 
@@ -78,24 +77,24 @@ const Login = () => {
 
             {/* Right Side (White Form) */}
             <div className="w-full lg:w-1/2 bg-white flex flex-col justify-center px-8 sm:px-16 md:px-24 xl:px-32 relative">
-                
-                <button 
-                    onClick={() => navigate('/')} 
-                    className="absolute top-8 left-8 sm:left-12 flex items-center text-gray-500 hover:text-gray-800 transition-colors text-sm font-medium z-10"
-                >
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Retour à l'accueil
-                </button>
 
                 <div className="w-full max-w-md mx-auto">
-                    <div className="mb-10 text-center lg:text-left">
-                        <div className="flex justify-center lg:justify-start items-center mb-6">
-                            <div className="bg-green-50 p-3 rounded-full mr-3 text-mali-green">
-                                <Shield className="w-6 h-6" />
+                    <button 
+                        onClick={() => navigate('/')} 
+                        className="flex items-center text-gray-500 hover:text-gray-800 transition-colors text-sm font-medium mb-8"
+                    >
+                        <ChevronLeft className="w-4 h-4 mr-1" />
+                        Retour à l'accueil
+                    </button>
+
+                    <div className="mb-10 text-left">
+                        <div className="flex items-center mb-2">
+                            <div className="bg-green-50 p-2 rounded-full mr-3 text-mali-green">
+                                <UserCircle className="w-6 h-6" />
                             </div>
                             <h2 className="text-2xl font-bold text-gray-900">Connexion</h2>
                         </div>
-                        <p className="text-gray-500 text-sm">Espace {roleTitle}</p>
+                        <p className="text-gray-500 text-sm ml-11">Espace {roleTitle}</p>
                     </div>
 
                     {error && (

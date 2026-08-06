@@ -32,6 +32,7 @@ class ContraventionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contravention
         fields = '__all__'
+        read_only_fields = ['numero', 'agent', 'montant', 'statut']
 
 
 class PaiementSerializer(serializers.ModelSerializer):

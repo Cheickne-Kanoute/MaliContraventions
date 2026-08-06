@@ -10,7 +10,9 @@ import {
   User,
   Download,
   AlertCircle,
-  Bell
+  Bell,
+  Menu,
+  X
 } from 'lucide-react';
 
 interface Contravention {
@@ -29,6 +31,7 @@ const DashboardCitoyen = () => {
     const navigate = useNavigate();
     const [contraventions, setContraventions] = useState<Contravention[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -71,13 +74,16 @@ const DashboardCitoyen = () => {
 
     return (
         <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
-            {/* Sidebar (Green for Citoyen) */}
-            <div className="w-64 bg-[#0a3622] text-white flex flex-col hidden md:flex">
-                <div className="p-6 border-b border-green-800">
+            {/* Sidebar (Green for Citoyen) - Desktop & Mobile */}
+            <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-[#0a3622] text-white flex-col transition-transform transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 md:flex`}>
+                <div className="p-6 border-b border-green-800 flex justify-between items-center">
                     <h2 className="text-xl font-bold text-white flex items-center">
                         <span className="w-8 h-8 rounded bg-green-500 flex items-center justify-center mr-3 text-white font-bold">C</span>
                         Espace Citoyen
                     </h2>
+                    <button className="md:hidden text-white" onClick={() => setIsMobileMenuOpen(false)}>
+                        <X className="w-6 h-6" />
+                    </button>
                 </div>
                 <div className="flex-1 overflow-y-auto py-4">
                     <nav className="space-y-1 px-3">
@@ -114,12 +120,23 @@ const DashboardCitoyen = () => {
                 </div>
             </div>
 
+            {/* Overlay for mobile */}
+            {isMobileMenuOpen && (
+                <div 
+                    className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                ></div>
+            )}
+
             {/* Main Content */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden w-full">
                 {/* Header */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-10">
+                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 z-10">
                     <div className="flex items-center">
-                        <h1 className="text-xl font-bold text-gray-800">Mon Dossier</h1>
+                        <button className="md:hidden mr-4 text-gray-500 hover:text-gray-700" onClick={() => setIsMobileMenuOpen(true)}>
+                            <Menu className="w-6 h-6" />
+                        </button>
+                        <h1 className="text-lg sm:text-xl font-bold text-gray-800 truncate max-w-[150px] sm:max-w-none">Mon Dossier</h1>
                     </div>
                     <div className="flex items-center space-x-4">
                         <button className="relative p-2 text-gray-400 hover:text-gray-500">
@@ -205,7 +222,11 @@ const DashboardCitoyen = () => {
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 text-sm">
                                     {recentContraventions.map((ctr) => (
-                                        <tr key={ctr.id} className="hover:bg-gray-50 transition-colors">
+                                        <tr 
+                                            key={ctr.id} 
+                                            className="hover:bg-gray-50 transition-colors cursor-pointer"
+                                            onClick={() => navigate(`/contraventions/${ctr.id}`)}
+                                        >
                                             <td className="px-6 py-4 font-mono font-medium text-gray-900">{ctr.numero}</td>
                                             <td className="px-6 py-4 text-gray-500">{new Date(ctr.date_contravention).toLocaleDateString('fr-FR')}</td>
                                             <td className="px-6 py-4 text-gray-600 max-w-xs truncate">{ctr.infraction_details?.libelle || 'Inconnue'}</td>
