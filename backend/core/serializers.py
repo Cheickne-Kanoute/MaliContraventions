@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Utilisateur, Infraction, Contravention, Paiement, Notification
+from .models import Utilisateur, Infraction, Contravention, Paiement, Notification, Litige
 
 
 class UtilisateurSerializer(serializers.ModelSerializer):
@@ -39,3 +39,16 @@ class PaiementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Paiement
         fields = '__all__'
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
+class LitigeSerializer(serializers.ModelSerializer):
+    contravention_details = ContraventionSerializer(source='contravention', read_only=True)
+
+    class Meta:
+        model = Litige
+        fields = '__all__'
+

@@ -45,6 +45,18 @@ const DashboardAgent = () => {
     const [commune, setCommune] = useState('Commune III');
     const [photo, setPhoto] = useState<File | null>(null);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
+    const [gpsLoading, setGpsLoading] = useState(false);
+
+    const detectGPS = () => {
+        if (!navigator.geolocation) { alert('Géolocalisation non disponible.'); return; }
+        setGpsLoading(true);
+        navigator.geolocation.getCurrentPosition(
+            pos => { setGpsCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGpsLoading(false); },
+            _err => { alert('Impossible de récupérer votre position. Veuillez saisir manuellement.'); setGpsLoading(false); },
+            { timeout: 10000 }
+        );
+    };
 
     const { data: contraventions = [], isLoading } = useQuery<Contravention[]>({
         queryKey: ['agentContraventions'],
@@ -80,6 +92,7 @@ const DashboardAgent = () => {
             setLieu('');
             setCommune('Commune III');
             setPhoto(null);
+            setGpsCoords(null);
         },
         onError: (error) => {
             console.error("Erreur lors de la création", error);
@@ -102,7 +115,10 @@ const DashboardAgent = () => {
         if (photo) {
             formData.append('photo_preuve', photo);
         }
-
+        if (gpsCoords) {
+            formData.append('latitude', String(gpsCoords.lat));
+            formData.append('longitude', String(gpsCoords.lng));
+        }
         createMutation.mutate(formData);
     };
 
@@ -330,6 +346,21 @@ const DashboardAgent = () => {
                                         </div>
                                         <p className="text-xs text-gray-500">{photo ? photo.name : 'PNG, JPG, GIF jusqu\'à 10MB'}</p>
                                     </div>
+                                </div>
+                            </div>
+                            {/* GPS Geolocation */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Géolocalisation GPS (Optionnel)</label>
+                                <div className="flex items-center gap-3">
+                                    <button type="button" onClick={detectGPS} disabled={gpsLoading}
+                                        className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                                        📍 {gpsLoading ? 'Localisation...' : 'Détecter ma position'}
+                                    </button>
+                                    {gpsCoords && (
+                                        <span className="text-xs text-green-700 font-medium bg-green-50 px-2 py-1 rounded">
+                                            ✓ {gpsCoords.lat.toFixed(5)}, {gpsCoords.lng.toFixed(5)}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                             <div className="pt-4 flex justify-end space-x-3">

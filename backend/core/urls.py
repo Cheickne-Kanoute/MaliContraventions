@@ -8,6 +8,8 @@ router.register(r'infractions', api_views.InfractionViewSet, basename='api-infra
 router.register(r'contraventions', api_views.ContraventionViewSet, basename='api-contravention')
 router.register(r'paiements', api_views.PaiementViewSet, basename='api-paiement')
 router.register(r'utilisateurs', api_views.UtilisateurViewSet, basename='api-utilisateur')
+router.register(r'litiges', api_views.LitigeViewSet, basename='api-litige')
+router.register(r'notifications', api_views.NotificationViewSet, basename='api-notification')
 
 urlpatterns = [
     # Application Web (Templates)

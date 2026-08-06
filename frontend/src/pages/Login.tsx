@@ -147,6 +147,13 @@ const Login = () => {
                             )}
                         </button>
                         
+                        {role === 'citoyen' && (
+                            <p className="text-center text-sm text-gray-500 mt-4">
+                                Pas encore de compte ?{' '}
+                                <a href="/register" className="text-mali-green font-semibold hover:underline">Créer un compte citoyen</a>
+                            </p>
+                        )}
+                        
                         <div className="mt-8 text-center text-xs text-gray-400">
                             Plateforme sécurisée - République du Mali
                         </div>

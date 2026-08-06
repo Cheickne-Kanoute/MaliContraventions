@@ -1,7 +1,89 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
-import { ArrowLeft, FileText, Download, CheckCircle, AlertCircle, XCircle, CreditCard } from 'lucide-react';
+import { ArrowLeft, FileText, Download, CheckCircle, AlertCircle, XCircle, CreditCard, QrCode } from 'lucide-react';
+
+const downloadPDF = async (contravention: any) => {
+    const { jsPDF } = await import('jspdf');
+    const doc = new jsPDF();
+
+    // Header
+    doc.setFillColor(0, 135, 81);
+    doc.rect(0, 0, 210, 40, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+    doc.text('PROCÈS-VERBAL DE CONTRAVENTION', 105, 17, { align: 'center' });
+    doc.setFontSize(11); doc.setFont('helvetica', 'normal');
+    doc.text('République du Mali · Ministère des Transports', 105, 27, { align: 'center' });
+    doc.text('Plateforme MaliContraventions', 105, 35, { align: 'center' });
+
+    // Body
+    doc.setTextColor(0, 0, 0);
+    let y = 55;
+    const addRow = (label: string, value: string) => {
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+        doc.text(label, 20, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(String(value || '-'), 80, y);
+        y += 9;
+    };
+
+    doc.setFontSize(12); doc.setFont('helvetica', 'bold');
+    doc.text('RÉFÉRENCE DU PROCÈS-VERBAL', 20, y); y += 10;
+    doc.setDrawColor(0, 135, 81); doc.line(20, y, 190, y); y += 8;
+
+    addRow('Numéro PV :', contravention.numero);
+    addRow('Date d\'émission :', new Date(contravention.date_contravention).toLocaleString('fr-FR'));
+    addRow('Statut :', contravention.statut);
+
+    y += 4;
+    doc.setFontSize(12); doc.setFont('helvetica', 'bold');
+    doc.text('VÉHICULE & INFRACTION', 20, y); y += 10;
+    doc.setDrawColor(0, 135, 81); doc.line(20, y, 190, y); y += 8;
+
+    addRow('Immatriculation :', contravention.immatriculation_vehicule);
+    addRow('Type véhicule :', contravention.type_vehicule || 'N/A');
+    addRow('Lieu / Adresse :', `${contravention.lieu_adresse || '-'} (${contravention.commune || '-'})`);
+    addRow('Infraction :', contravention.infraction_details?.libelle || 'N/A');
+    addRow('Gravité :', contravention.infraction_details?.degre_gravite || 'N/A');
+
+    y += 4;
+    doc.setFontSize(12); doc.setFont('helvetica', 'bold');
+    doc.text('MONTANT DE L\'AMENDE', 20, y); y += 10;
+    doc.setDrawColor(206, 17, 38); doc.line(20, y, 190, y); y += 8;
+    doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.setTextColor(206, 17, 38);
+    doc.text(`${parseFloat(contravention.montant).toLocaleString('fr-FR')} FCFA`, 20, y);
+    doc.setTextColor(0, 0, 0); y += 14;
+
+    doc.setFontSize(12); doc.setFont('helvetica', 'bold');
+    doc.text('AGENT VERBALISATEUR', 20, y); y += 10;
+    doc.setDrawColor(0, 135, 81); doc.line(20, y, 190, y); y += 8;
+    doc.setFont('helvetica', 'normal');
+    addRow('Agent :', `${contravention.agent_details?.first_name || ''} ${contravention.agent_details?.last_name || ''}`.trim() || 'N/A');
+    addRow('Service :', contravention.agent_details?.service_agent || 'N/A');
+    addRow('Badge :', contravention.agent_details?.badge_agent || 'N/A');
+
+    // Citoyen
+    if (contravention.citoyen_details) {
+        y += 4;
+        doc.setFontSize(12); doc.setFont('helvetica', 'bold');
+        doc.text('CONTREVENANT', 20, y); y += 10;
+        doc.setDrawColor(100, 100, 100); doc.line(20, y, 190, y); y += 8;
+        addRow('Nom & Prénom :', `${contravention.citoyen_details?.first_name || ''} ${contravention.citoyen_details?.last_name || ''}`.trim());
+        addRow('NINA :', contravention.citoyen_details?.nin_carte_identite || 'N/A');
+    }
+
+    // Footer
+    y = 270;
+    doc.setFillColor(245, 245, 245);
+    doc.rect(0, y, 210, 30, 'F');
+    doc.setFontSize(8); doc.setTextColor(100, 100, 100); doc.setFont('helvetica', 'normal');
+    doc.text('Ce document est officiel. Vérifiez son authenticité sur : malicontraventions.ml/verifier/' + contravention.numero, 105, y + 8, { align: 'center' });
+    doc.text('En cas de contestation, adressez-vous au service compétent dans les 30 jours.', 105, y + 16, { align: 'center' });
+    doc.text(`Généré le ${new Date().toLocaleString('fr-FR')}`, 105, y + 24, { align: 'center' });
+
+    doc.save(`PV-${contravention.numero}.pdf`);
+};
 
 const ContraventionDetail = () => {
     const { id } = useParams();
@@ -80,15 +162,13 @@ const ContraventionDetail = () => {
                         <ArrowLeft className="w-5 h-5 mr-2" />
                         Retour
                     </button>
-                    <a 
-                        href={`http://localhost:8000/contraventions/${contravention.id}/pdf/`} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                    <button
+                        onClick={() => downloadPDF(contravention)}
+                        className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                     >
                         <Download className="w-4 h-4 mr-2" />
                         Télécharger le PDF
-                    </a>
+                    </button>
                 </div>
 
                 {/* Detail Card */}
@@ -152,11 +232,11 @@ const ContraventionDetail = () => {
                                             disabled={payMutation.isPending}
                                             className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium flex items-center justify-center"
                                         >
-                                            <CreditCard className="w-5 h-5 mr-2" /> Payer ({contravention.montant} FCFA)
+                                            <CreditCard className="w-5 h-5 mr-2" /> Payer ({parseFloat(contravention.montant).toLocaleString('fr-FR')} FCFA)
                                         </button>
                                         <button 
-                                            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-medium flex items-center justify-center"
-                                            onClick={() => alert('Fonctionnalité de contestation à venir')}
+                                            className="flex-1 bg-orange-100 hover:bg-orange-200 text-orange-800 py-2 rounded-lg font-medium flex items-center justify-center"
+                                            onClick={() => navigate('/dashboard/citoyen')}
                                         >
                                             <AlertCircle className="w-5 h-5 mr-2" /> Contester
                                         </button>
@@ -178,11 +258,16 @@ const ContraventionDetail = () => {
                                 </div>
                             )}
 
-                            {/* QR Code Placeholder (If actual QR code image is generated, it should be fetched, otherwise we can use a library to generate it, but since the requirement mentions QR code + PDF, PDF contains the QR code, or we can use react-qr-code) */}
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 mt-6">Vérification QR</h3>
+                            {/* QR Code */}
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 mt-6 flex items-center gap-2"><QrCode className="w-4 h-4" /> Vérification QR Code</h3>
                             <div className="bg-white p-4 inline-block border border-gray-200 rounded-lg shadow-sm">
-                                {/* Normally we'd use a QR code library like react-qr-code here. We just show a placeholder or text for now to indicate it exists. */}
-                                <div className="w-32 h-32 bg-gray-100 flex items-center justify-center text-xs text-gray-400 text-center">QR Code affiché sur le PDF</div>
+                                <img
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent('https://malicontraventions.ml/verifier/' + contravention.numero)}`}
+                                    alt={`QR Code - ${contravention.numero}`}
+                                    className="w-32 h-32"
+                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                />
+                                <p className="text-xs text-gray-400 mt-2 text-center max-w-[128px]">Scannez pour vérifier l'authenticité</p>
                             </div>
                         </div>
                     </div>
