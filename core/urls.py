@@ -39,6 +39,13 @@ urlpatterns = [
     path('contraventions/<int:pk>/valider/', views.valider_contravention_view, name='valider_contravention'),
     path('contraventions/<int:pk>/rejeter/', views.rejeter_contravention_view, name='rejeter_contravention'),
     path('contraventions/<int:pk>/payer/', views.payer_contravention_view, name='payer_contravention'),
+    path('contraventions/<int:pk>/pdf/', views.contravention_pdf_view, name='contravention_pdf'),
+    path('contraventions/<int:pk>/contester/', views.contester_contravention_view, name='contester_contravention'),
+    
+    path('litiges/', views.litiges_list_view, name='litiges_list'),
+    path('litiges/<int:pk>/traiter/', views.traiter_litige_view, name='traiter_litige'),
+    
+    path('api/geoloc/', views.api_contraventions_geoloc, name='api_contraventions_geoloc'),
 
     # API REST Framework & JWT Endpoints
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

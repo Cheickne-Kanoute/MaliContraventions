@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Traitement Litige - PV {{ litige.contravention.numero }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-2">
+    <div class="col-md-9 col-lg-7">
+        <div class="d-flex align-items-center mb-3">
+            <a href="{% url 'litiges_list' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                <i class="fa-solid fa-arrow-left me-1"></i> Retour à la liste
+            </a>
+        </div>
+
+        <div class="card card-custom p-4 shadow-sm border-0 mb-4">
+            <div class="d-flex justify-content-between align-items-start mb-4 border-bottom pb-3">
+                <div>
+                    <h4 class="fw-bold text-dark mb-1">Détail du Litige</h4>
+                    <p class="text-muted mb-0">Déposé le {{ litige.date_depot|date:"d/m/Y H:i" }} par {{ litige.contravention.citoyen.get_full_name_or_username }}</p>
+                </div>
+                <div>
+                    {% if litige.statut == 'EN_ATTENTE' %}
+                        <span class="badge bg-warning text-dark px-3 py-2 fs-6"><i class="fa-solid fa-clock me-1"></i>En attente</span>
+                    {% elif litige.statut == 'ACCEPTE' %}
+                        <span class="badge bg-success px-3 py-2 fs-6"><i class="fa-solid fa-check-double me-1"></i>Accepté</span>
+                    {% else %}
+                        <span class="badge bg-danger px-3 py-2 fs-6"><i class="fa-solid fa-xmark me-1"></i>Rejeté</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="alert alert-light border rounded-3 mb-4">
+                <strong class="d-block text-dark mb-2"><i class="fa-solid fa-comment-dots me-2"></i>Motif de la contestation :</strong>
+                <p class="mb-0 text-dark">{{ litige.motif|linebreaks }}</p>
+                
+                {% if litige.piece_jointe %}
+                <hr class="my-3 text-muted">
+                <strong class="d-block text-dark mb-2"><i class="fa-solid fa-paperclip me-2"></i>Pièce justificative fournie :</strong>
+                <a href="{{ litige.piece_jointe.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="fa-solid fa-download me-1"></i> Télécharger / Voir la pièce jointe
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Contravention Details Recap -->
+            <div class="mb-4">
+                <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">Informations de la contravention</h6>
+                <div class="row g-2 text-sm text-muted">
+                    <div class="col-sm-6"><strong>N° PV:</strong> <a href="{% url 'contravention_detail' litige.contravention.pk %}">{{ litige.contravention.numero }}</a></div>
+                    <div class="col-sm-6"><strong>Date:</strong> {{ litige.contravention.date_contravention|date:"d/m/Y H:i" }}</div>
+                    <div class="col-sm-6"><strong>Infraction:</strong> {{ litige.contravention.infraction.libelle }}</div>
+                    <div class="col-sm-6"><strong>Montant:</strong> <span class="text-danger fw-bold">{{ litige.contravention.montant|floatformat:0 }} FCFA</span></div>
+                    <div class="col-sm-6"><strong>Véhicule:</strong> {{ litige.contravention.immatriculation_vehicule }}</div>
+                </div>
+            </div>
+
+            {% if litige.statut == 'EN_ATTENTE' %}
+            <!-- Treatment Form -->
+            <form method="post" class="bg-light p-4 rounded-3 border">
+                {% csrf_token %}
+                <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-gavel me-2"></i>Traitement Administratif</h5>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-dark">Décision / Commentaire (Sera envoyé au citoyen) <span class="text-danger">*</span></label>
+                    <textarea name="decision" class="form-control" rows="3" required placeholder="Expliquez la décision prise..."></textarea>
+                </div>
+                
+                <div class="d-flex gap-2 justify-content-end mt-4">
+                    <button type="submit" name="action" value="REJETER" class="btn btn-danger px-4 rounded-pill fw-bold" onclick="return confirm('Confirmer le REJET de cette contestation ?');">
+                        <i class="fa-solid fa-xmark me-2"></i> Rejeter le litige
+                    </button>
+                    <button type="submit" name="action" value="ACCEPTER" class="btn btn-success px-4 rounded-pill fw-bold" onclick="return confirm('Confirmer l\'ACCEPTATION de cette contestation (Le PV sera annulé) ?');">
+                        <i class="fa-solid fa-check me-2"></i> Accepter (Annuler PV)
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <!-- Decision view -->
+            <div class="bg-light p-4 rounded-3 border">
+                <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-gavel me-2"></i>Décision de l'Administration</h5>
+                <div class="mb-2"><strong>Traité le :</strong> {{ litige.date_decision|date:"d/m/Y H:i" }}</div>
+                <div><strong>Commentaire / Justification :</strong></div>
+                <div class="p-3 bg-white border rounded-3 mt-2">{{ litige.decision|linebreaks }}</div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

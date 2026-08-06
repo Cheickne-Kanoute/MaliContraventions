@@ -110,3 +110,15 @@ class PaiementForm(forms.ModelForm):
         widgets = {
             'mode_paiement': forms.Select(attrs={'class': 'form-select'}),
         }
+
+from .models import Litige
+
+class LitigeForm(forms.ModelForm):
+    class Meta:
+        model = Litige
+        fields = ['motif', 'piece_jointe']
+        widgets = {
+            'motif': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Expliquez en détail pourquoi vous contestez cette contravention...'}),
+            'piece_jointe': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+

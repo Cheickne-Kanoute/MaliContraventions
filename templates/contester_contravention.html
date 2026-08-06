@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Contester la Contravention {{ contravention.numero }} - Mali Contraventions{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-2">
+    <div class="col-md-8 col-lg-6">
+        <div class="d-flex align-items-center mb-3">
+            <a href="{% url 'contravention_detail' contravention.pk %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                <i class="fa-solid fa-arrow-left me-1"></i> Retour au détail
+            </a>
+        </div>
+
+        <div class="card card-custom p-4 shadow-sm border-0">
+            <div class="text-center mb-4">
+                <i class="fa-solid fa-scale-balanced text-warning fs-1 mb-2"></i>
+                <h4 class="fw-bold text-dark mb-1">Contester une Contravention</h4>
+                <p class="text-muted small">Vous êtes sur le point de déposer un litige officiel pour le PV <strong>{{ contravention.numero }}</strong>.</p>
+            </div>
+
+            <div class="alert alert-info border-0 rounded-3 mb-4">
+                <strong class="d-block mb-1"><i class="fa-solid fa-circle-info me-2"></i>Rappel des faits</strong>
+                <ul class="mb-0 ps-3">
+                    <li><strong>Infraction :</strong> {{ contravention.infraction.libelle }}</li>
+                    <li><strong>Date & Lieu :</strong> {{ contravention.date_contravention|date:"d/m/Y H:i" }} à {{ contravention.lieu_adresse }}</li>
+                    <li><strong>Montant :</strong> <span class="text-danger fw-bold">{{ contravention.montant|floatformat:0 }} FCFA</span></li>
+                </ul>
+            </div>
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Motif détaillé de votre contestation <span class="text-danger">*</span></label>
+                    {{ form.motif }}
+                    {% if form.motif.errors %}
+                        <div class="text-danger small mt-1">{{ form.motif.errors.as_text }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Pièce justificative (Optionnel)</label>
+                    {{ form.piece_jointe }}
+                    <div class="form-text text-muted">Ex: Photo du véhicule, document d'assurance valide, etc. (Formats acceptés: JPG, PNG, PDF)</div>
+                    {% if form.piece_jointe.errors %}
+                        <div class="text-danger small mt-1">{{ form.piece_jointe.errors.as_text }}</div>
+                    {% endif %}
+                </div>
+
+                <hr class="my-4 text-muted">
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'contravention_detail' contravention.pk %}" class="btn btn-light border px-4 rounded-pill">Annuler</a>
+                    <button type="submit" class="btn btn-warning px-4 rounded-pill fw-bold">
+                        <i class="fa-solid fa-paper-plane me-2"></i>Soumettre la contestation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

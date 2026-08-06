@@ -204,10 +204,11 @@ def infraction_delete_view(request, pk):
 
 @login_required
 def contravention_create_view(request):
-    if not (request.user.is_agent_role() or request.user.is_admin_role()):
-        messages.error(request, "Seuls les agents verbalisateurs peuvent établir une contravention.")
+    # Only Admin or Agent can create contraventions
+    if not (request.user.is_admin_role() or request.user.is_agent_role()):
+        messages.error(request, "Accès refusé.")
         return redirect('dashboard')
-
+        
     if request.method == 'POST':
         form = ContraventionForm(request.POST)
         if form.is_valid():
@@ -234,6 +235,20 @@ def contravention_create_view(request):
             contravention.numero = f"CTR-BKO-{year}-{rand_suffix}"
 
             contravention.save()
+
+            # Gestion de la Géolocalisation
+            latitude = request.POST.get('gps_latitude')
+            longitude = request.POST.get('gps_longitude')
+            if latitude and longitude:
+                try:
+                    from .models import GPSLocation
+                    GPSLocation.objects.create(
+                        contravention=contravention,
+                        latitude=float(latitude),
+                        longitude=float(longitude)
+                    )
+                except ValueError:
+                    pass
 
             # Create notification for citizen
             if contravention.citoyen:
@@ -600,3 +615,129 @@ def export_contraventions_csv(request):
 def code_route_view(request):
     infractions = Infraction.objects.filter(statut_actif=True).order_by('degre_gravite', 'code')
     return render(request, 'code_route.html', {'infractions': infractions})
+
+def contravention_pdf_view(request, pk):
+    from .pdf_utils import generer_pdf_contravention
+    contravention = get_object_or_404(Contravention, pk=pk)
+    
+    # Check permissions
+    if not request.user.is_admin_role() and not request.user.is_agent_role() and contravention.citoyen != request.user:
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+        
+    pdf_buffer = generer_pdf_contravention(contravention, request)
+    response = HttpResponse(pdf_buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="contravention_{contravention.numero}.pdf"'
+    return response
+
+@login_required
+def contester_contravention_view(request, pk):
+    from .forms import LitigeForm
+    from .models import Litige
+    contravention = get_object_or_404(Contravention, pk=pk)
+    
+    # Seul le citoyen concerné peut contester, et si la contravention est VALIDEE
+    if contravention.citoyen != request.user or contravention.statut != Contravention.STATUT_VALIDEE:
+        messages.error(request, "Vous ne pouvez pas contester cette contravention.")
+        return redirect('dashboard')
+        
+    if hasattr(contravention, 'litige'):
+        messages.warning(request, "Un litige est déjà en cours pour cette contravention.")
+        return redirect('contravention_detail', pk=contravention.pk)
+        
+    if request.method == 'POST':
+        form = LitigeForm(request.POST, request.FILES)
+        if form.is_valid():
+            litige = form.save(commit=False)
+            litige.contravention = contravention
+            litige.save()
+            messages.success(request, "Votre contestation a bien été soumise et est en attente de traitement.")
+            return redirect('contravention_detail', pk=contravention.pk)
+    else:
+        form = LitigeForm()
+        
+    return render(request, 'contester_contravention.html', {'form': form, 'contravention': contravention})
+
+@login_required
+def litiges_list_view(request):
+    from .models import Litige
+    from django.core.paginator import Paginator
+    if not request.user.is_admin_role() and not request.user.is_agent_role():
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+        
+    statut_filter = request.GET.get('statut', '')
+    litiges_qs = Litige.objects.all().select_related('contravention', 'contravention__citoyen')
+    
+    if statut_filter:
+        litiges_qs = litiges_qs.filter(statut=statut_filter)
+        
+    paginator = Paginator(litiges_qs, 10)
+    page_number = request.GET.get('page')
+    litiges = paginator.get_page(page_number)
+    
+    return render(request, 'litiges_list.html', {'litiges': litiges, 'statut_filter': statut_filter})
+
+@login_required
+def traiter_litige_view(request, pk):
+    from .models import Litige, Contravention, Notification
+    from django.utils import timezone
+    if not request.user.is_admin_role():
+        messages.error(request, "Seul un administrateur peut traiter les litiges.")
+        return redirect('dashboard')
+        
+    litige = get_object_or_404(Litige, pk=pk)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        decision_text = request.POST.get('decision', '')
+        
+        if action == 'ACCEPTER':
+            litige.statut = Litige.STATUT_ACCEPTE
+            litige.contravention.statut = Contravention.STATUT_ANNULEE
+        elif action == 'REJETER':
+            litige.statut = Litige.STATUT_REJETE
+            litige.contravention.statut = Contravention.STATUT_VALIDEE
+            
+        litige.decision = decision_text
+        litige.date_decision = timezone.now()
+        litige.save()
+        litige.contravention.save()
+        
+        # Notification au citoyen
+        titre_notif = "Contestation acceptée" if action == 'ACCEPTER' else "Contestation rejetée"
+        message_notif = f"Votre contestation pour le PV {litige.contravention.numero} a été traitée. Décision : {decision_text}"
+        Notification.objects.create(
+            utilisateur=litige.contravention.citoyen,
+            titre=titre_notif,
+            message=message_notif,
+            type_notification='LITIGE'
+        )
+        
+        messages.success(request, "Le litige a été traité avec succès.")
+        return redirect('litiges_list')
+        
+    return render(request, 'litige_detail.html', {'litige': litige})
+
+
+@login_required
+def api_contraventions_geoloc(request):
+    from .models import GPSLocation
+    if not request.user.is_admin_role() and not request.user.is_agent_role():
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    locations = GPSLocation.objects.select_related('contravention', 'contravention__infraction').all()
+    data = []
+    for loc in locations:
+        data.append({
+            'lat': loc.latitude,
+            'lng': loc.longitude,
+            'numero': loc.contravention.numero,
+            'infraction': loc.contravention.infraction.libelle,
+            'montant': loc.contravention.montant,
+            'date': loc.contravention.date_contravention.strftime('%d/%m/%Y'),
+            'statut': loc.contravention.statut
+        })
+    return JsonResponse({'locations': data})
+
+

@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestion des Litiges - Mali Contraventions{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold text-dark mb-1"><i class="fa-solid fa-scale-balanced text-warning me-2"></i>Gestion des Litiges</h3>
+        <small class="text-muted">Traiter les contestations soumises par les citoyens</small>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card card-custom p-3 mb-4">
+    <form method="get" class="row g-3 align-items-center">
+        <div class="col-auto">
+            <label class="col-form-label fw-semibold">Filtrer par statut :</label>
+        </div>
+        <div class="col-auto">
+            <select name="statut" class="form-select" onchange="this.form.submit()">
+                <option value="">Tous les litiges</option>
+                <option value="EN_ATTENTE" {% if statut_filter == 'EN_ATTENTE' %}selected{% endif %}>En attente</option>
+                <option value="ACCEPTE" {% if statut_filter == 'ACCEPTE' %}selected{% endif %}>Acceptés</option>
+                <option value="REJETE" {% if statut_filter == 'REJETE' %}selected{% endif %}>Rejetés</option>
+            </select>
+        </div>
+    </form>
+</div>
+
+<!-- Table -->
+<div class="card card-custom p-0 overflow-hidden mb-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">PV N°</th>
+                    <th>Citoyen</th>
+                    <th>Date Dépôt</th>
+                    <th>Statut</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for litige in litiges %}
+                <tr>
+                    <td class="ps-4 fw-bold font-monospace">{{ litige.contravention.numero }}</td>
+                    <td>{{ litige.contravention.citoyen.get_full_name_or_username }}</td>
+                    <td>{{ litige.date_depot|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if litige.statut == 'EN_ATTENTE' %}
+                            <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>En attente</span>
+                        {% elif litige.statut == 'ACCEPTE' %}
+                            <span class="badge bg-success"><i class="fa-solid fa-check-double me-1"></i>Accepté</span>
+                        {% else %}
+                            <span class="badge bg-danger"><i class="fa-solid fa-xmark me-1"></i>Rejeté</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                        <a href="{% url 'traiter_litige' litige.pk %}" class="btn btn-sm btn-outline-primary rounded-pill">
+                            {% if litige.statut == 'EN_ATTENTE' %}Traiter{% else %}Consulter{% endif %}
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">Aucun litige trouvé.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

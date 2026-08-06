@@ -189,8 +189,47 @@
                 {% endfor %}
             </div>
         </div>
+
+        <!-- Carte Géolocalisation (Leaflet) -->
+        <div class="card card-custom p-3 p-md-4 mb-4">
+            <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-map text-success me-2"></i>Carte des Infractions</h5>
+            <div id="map" style="height: 300px; border-radius: 10px;"></div>
+        </div>
     </div>
 </div>
+
+{% block extra_head %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        if (document.getElementById('map')) {
+            var map = L.map('map').setView([12.6392, -8.0029], 12); // Bamako
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            fetch("{% url 'api_contraventions_geoloc' %}")
+                .then(response => response.json())
+                .then(data => {
+                    if(data.locations) {
+                        data.locations.forEach(loc => {
+                            var marker = L.marker([loc.lat, loc.lng]).addTo(map);
+                            marker.bindPopup(`<b>PV: ${loc.numero}</b><br>${loc.infraction}<br>${loc.montant} FCFA<br>Statut: ${loc.statut}`);
+                        });
+                    }
+                })
+                .catch(error => console.error("Erreur de chargement de la carte", error));
+        }
+    });
+</script>
+{% endblock %}
 
 {% elif role_view == 'AGENT' %}
 <!-- AGENT STATS CARDS -->

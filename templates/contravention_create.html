@@ -83,6 +83,14 @@
                             {{ form.lieu_adresse }}
                         </div>
                     </div>
+                    <div class="mb-3 d-flex align-items-center gap-3">
+                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" id="btn-geoloc">
+                            <i class="fa-solid fa-location-crosshairs me-1"></i> Localiser ma position
+                        </button>
+                        <span id="geoloc-status" class="small text-muted fw-semibold"></span>
+                        <input type="hidden" name="gps_latitude" id="gps_latitude">
+                        <input type="hidden" name="gps_longitude" id="gps_longitude">
+                    </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Observations / Remarques de l'agent</label>
                         {{ form.notes }}
@@ -183,6 +191,39 @@ function clearCitizenSelection() {
     if (inputNinaId) inputNinaId.value = '';
     if (selectedBox) selectedBox.classList.add('d-none');
     if (inputSearch) inputSearch.value = '';
+}
+
+// Geolocation Logic
+const btnGeoloc = document.getElementById('btn-geoloc');
+const geolocStatus = document.getElementById('geoloc-status');
+const inputLat = document.getElementById('gps_latitude');
+const inputLng = document.getElementById('gps_longitude');
+
+if (btnGeoloc) {
+    btnGeoloc.addEventListener('click', function() {
+        if (!navigator.geolocation) {
+            geolocStatus.innerHTML = "<span class='text-danger'><i class='fa-solid fa-triangle-exclamation'></i> Géolocalisation non supportée par votre navigateur</span>";
+            return;
+        }
+        
+        geolocStatus.innerHTML = "<span class='text-primary'><i class='fa-solid fa-spinner fa-spin'></i> Localisation en cours...</span>";
+        btnGeoloc.disabled = true;
+        
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                inputLat.value = position.coords.latitude;
+                inputLng.value = position.coords.longitude;
+                geolocStatus.innerHTML = "<span class='text-success'><i class='fa-solid fa-check-circle'></i> Position capturée (" + position.coords.latitude.toFixed(4) + ", " + position.coords.longitude.toFixed(4) + ")</span>";
+                btnGeoloc.classList.replace('btn-outline-primary', 'btn-success');
+                btnGeoloc.innerHTML = "<i class='fa-solid fa-check me-1'></i> Localisé";
+            },
+            function(error) {
+                btnGeoloc.disabled = false;
+                geolocStatus.innerHTML = "<span class='text-danger'><i class='fa-solid fa-circle-xmark'></i> Échec de la localisation (" + error.message + ")</span>";
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    });
 }
 </script>
 {% endblock %}
