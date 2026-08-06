@@ -165,6 +165,12 @@ class Contravention(models.Model):
     def __str__(self):
         return f"{self.numero} - {self.immatriculation_vehicule} ({self.get_statut_display()})"
 
+    def get_qr_data(self, request):
+        """Retourne l'URL absolue pour vérifier la contravention."""
+        url_path = f"/verifier/?q={self.numero}"
+        return request.build_absolute_uri(url_path) if request else url_path
+
+
     class Meta:
         ordering = ['-date_contravention']
 
