@@ -42,8 +42,6 @@ interface Contravention {
     infraction_details?: any;
 }
 
-}
-
 interface User {
     id: number;
     username: string;
