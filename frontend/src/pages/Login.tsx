@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import { Shield, ChevronLeft, UserCircle } from 'lucide-react';
+import heroImg from '../assets/hero.png';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -49,8 +50,11 @@ const Login = () => {
 
     return (
         <div className="min-h-screen flex font-sans">
-            {/* Left Side (Dark Green) */}
-            <div className="hidden lg:flex lg:w-1/2 bg-mali-dark flex-col items-center justify-center p-12 text-white relative">
+            {/* Left Side (Dark Green / Hero Image) */}
+            <div 
+                className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center p-12 text-white relative bg-mali-dark bg-cover bg-center"
+                style={{ backgroundImage: `linear-gradient(rgba(10, 54, 34, 0.8), rgba(10, 54, 34, 0.9)), url(${heroImg})` }}
+            >
                 
                 {/* Logo and Titles */}
                 <div className="flex flex-col items-center mb-16">
@@ -75,7 +79,10 @@ const Login = () => {
             {/* Right Side (White Form) */}
             <div className="w-full lg:w-1/2 bg-white flex flex-col justify-center px-8 sm:px-16 md:px-24 xl:px-32 relative">
                 
-                <button className="absolute top-8 left-8 sm:left-12 flex items-center text-gray-500 hover:text-gray-800 transition-colors text-sm font-medium">
+                <button 
+                    onClick={() => navigate('/')} 
+                    className="absolute top-8 left-8 sm:left-12 flex items-center text-gray-500 hover:text-gray-800 transition-colors text-sm font-medium z-10"
+                >
                     <ChevronLeft className="w-4 h-4 mr-1" />
                     Retour à l'accueil
                 </button>
