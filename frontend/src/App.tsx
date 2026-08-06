@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import DashboardAdmin from './pages/DashboardAdmin';
 import DashboardAgent from './pages/DashboardAgent';
 import DashboardCitoyen from './pages/DashboardCitoyen';
+import CodeRoute from './pages/CodeRoute';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/dashboard/admin" element={<DashboardAdmin />} />
         <Route path="/dashboard/agent" element={<DashboardAgent />} />
         <Route path="/dashboard/citoyen" element={<DashboardCitoyen />} />
+        <Route path="/code-route" element={<CodeRoute />} />
       </Routes>
     </Router>
   );

@@ -109,6 +109,13 @@ const Home = () => {
                     </div>
 
                 </div>
+
+                {/* Additional Links */}
+                <div className="mt-16 text-center">
+                    <Link to="/code-route" className="inline-flex items-center text-yellow-500 hover:text-yellow-400 font-medium transition-colors">
+                        Consulter le Code de la Route et le référentiel des infractions &rarr;
+                    </Link>
+                </div>
             </div>
         </div>
     );
