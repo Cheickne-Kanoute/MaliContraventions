@@ -3,9 +3,19 @@ from .models import Utilisateur, Infraction, Contravention, Paiement, Notificati
 
 
 class UtilisateurSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False, allow_null=True)
+
     class Meta:
         model = Utilisateur
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'telephone', 'nin_carte_identite', 'badge_agent', 'service_agent']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'telephone', 'nin_carte_identite', 'badge_agent', 'service_agent', 'password']
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        user = super().create(validated_data)
+        if password:
+            user.set_password(password)
+            user.save()
+        return user
 
 
 class InfractionSerializer(serializers.ModelSerializer):

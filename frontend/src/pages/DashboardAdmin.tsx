@@ -12,7 +12,9 @@ import {
   MapPin,
   Settings,
   Bell,
-  Search
+  Search,
+  UserPlus,
+  X
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -40,13 +42,35 @@ interface Contravention {
     infraction_details?: any;
 }
 
+}
+
+interface User {
+    id: number;
+    username: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    role: string;
+    telephone: string;
+    badge_agent?: string;
+    nin_carte_identite?: string;
+}
+
 const COLORS = ['#008751', '#FCD116', '#CE1126', '#6b7280'];
 
 const DashboardAdmin = () => {
     const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState('dashboard');
     const [contraventions, setContraventions] = useState<Contravention[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [totalRecettes, setTotalRecettes] = useState(0);
     const [loading, setLoading] = useState(true);
+    
+    // User Modal State
+    const [showUserModal, setShowUserModal] = useState(false);
+    const [newUser, setNewUser] = useState({
+        first_name: '', last_name: '', email: '', password: '', role: 'AGENT', telephone: '', badge_agent: '', nin_carte_identite: ''
+    });
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -60,6 +84,10 @@ const DashboardAdmin = () => {
                 const resPaiements = await api.get('/api/paiements/');
                 const recettes = resPaiements.data.reduce((sum: number, p: any) => sum + parseFloat(p.montant), 0);
                 setTotalRecettes(recettes);
+
+                // Fetch users
+                const resUsers = await api.get('/api/utilisateurs/');
+                setUsers(resUsers.data);
 
             } catch (error: any) {
                 if (error.response?.status === 401) {
@@ -78,6 +106,24 @@ const DashboardAdmin = () => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         navigate('/login');
+    };
+
+    const handleCreateUser = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const username = newUser.email.split('@')[0];
+            const payload = { ...newUser, username };
+            await api.post('/api/utilisateurs/', payload);
+            alert("Utilisateur créé avec succès !");
+            setShowUserModal(false);
+            // Refresh users
+            const resUsers = await api.get('/api/utilisateurs/');
+            setUsers(resUsers.data);
+            setNewUser({ first_name: '', last_name: '', email: '', password: '', role: 'AGENT', telephone: '', badge_agent: '', nin_carte_identite: '' });
+        } catch (error) {
+            console.error("Erreur lors de la création de l'utilisateur", error);
+            alert("Erreur lors de la création de l'utilisateur.");
+        }
     };
 
     // Calculate Stats
@@ -122,18 +168,18 @@ const DashboardAdmin = () => {
                 </div>
                 <div className="flex-1 overflow-y-auto py-4">
                     <nav className="space-y-1 px-3">
-                        <a href="#" className="flex items-center px-3 py-2.5 bg-mali-green bg-opacity-20 text-mali-yellow rounded-lg">
+                        <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'dashboard' ? 'bg-mali-green bg-opacity-20 text-mali-yellow' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
                             <LayoutDashboard className="w-5 h-5 mr-3" />
                             Tableau de bord
-                        </a>
-                        <a href="#" className="flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
+                        </button>
+                        <button className="w-full flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
                             <FileText className="w-5 h-5 mr-3" />
                             Contraventions
-                        </a>
-                        <a href="#" className="flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
+                        </button>
+                        <button onClick={() => setActiveTab('utilisateurs')} className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'utilisateurs' ? 'bg-mali-green bg-opacity-20 text-mali-yellow' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
                             <Users className="w-5 h-5 mr-3" />
                             Agents & Citoyens
-                        </a>
+                        </button>
                         <a href="#" className="flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
                             <MapPin className="w-5 h-5 mr-3" />
                             Géolocalisation
@@ -179,10 +225,12 @@ const DashboardAdmin = () => {
                 </header>
 
                 {/* Dashboard Body */}
-                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6 relative">
                     
-                    {/* Welcome Banner */}
-                    <div className="bg-gradient-to-r from-[#008751] to-[#005231] rounded-xl p-6 text-white mb-6 shadow-sm">
+                    {activeTab === 'dashboard' && (
+                        <>
+                            {/* Welcome Banner */}
+                            <div className="bg-gradient-to-r from-[#008751] to-[#005231] rounded-xl p-6 text-white mb-6 shadow-sm">
                         <div className="inline-flex items-center px-3 py-1 rounded-full bg-mali-yellow text-mali-dark text-xs font-bold mb-3 shadow-sm">
                             <span className="w-2 h-2 rounded-full bg-mali-dark mr-2"></span> ESPACE ADMINISTRATEUR
                         </div>
@@ -332,6 +380,136 @@ const DashboardAdmin = () => {
                             </table>
                         </div>
                     </div>
+                        </>
+                    )}
+
+                    {activeTab === 'utilisateurs' && (
+                        <div>
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-2xl font-bold text-gray-800">Gestion des Utilisateurs</h2>
+                                <button onClick={() => setShowUserModal(true)} className="bg-mali-green hover:bg-green-800 text-white font-bold py-2 px-4 rounded-lg flex items-center transition-colors shadow-sm">
+                                    <UserPlus className="w-5 h-5 mr-2" />
+                                    Nouvel Utilisateur
+                                </button>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
+                                                <th className="px-6 py-3 font-medium">Nom & Prénom</th>
+                                                <th className="px-6 py-3 font-medium">Email</th>
+                                                <th className="px-6 py-3 font-medium">Rôle</th>
+                                                <th className="px-6 py-3 font-medium">Téléphone</th>
+                                                <th className="px-6 py-3 font-medium text-center">Identifiant (Badge/NINA)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 text-sm">
+                                            {users.map(u => (
+                                                <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-6 py-4 font-semibold text-gray-900">{u.first_name} {u.last_name}</td>
+                                                    <td className="px-6 py-4 text-gray-600">{u.email}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
+                                                            u.role === 'ADMIN' ? 'bg-yellow-100 text-yellow-800' : 
+                                                            u.role === 'AGENT' ? 'bg-blue-100 text-blue-800' : 
+                                                            'bg-green-100 text-green-800'
+                                                        }`}>
+                                                            {u.role}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-gray-600">{u.telephone || '-'}</td>
+                                                    <td className="px-6 py-4 text-center font-mono text-gray-500">
+                                                        {u.role === 'AGENT' ? u.badge_agent : u.nin_carte_identite || '-'}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* User Creation Modal */}
+                    {showUserModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+                            <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                                    <h3 className="text-lg font-bold text-gray-800 flex items-center">
+                                        <UserPlus className="w-5 h-5 mr-2 text-mali-green" />
+                                        Créer un compte
+                                    </h3>
+                                    <button onClick={() => setShowUserModal(false)} className="text-gray-400 hover:text-gray-600">
+                                        <X className="w-6 h-6" />
+                                    </button>
+                                </div>
+                                
+                                <form onSubmit={handleCreateUser} className="p-6 overflow-y-auto">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+                                            <input type="text" required value={newUser.first_name} onChange={e => setNewUser({...newUser, first_name: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-green outline-none" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                                            <input type="text" required value={newUser.last_name} onChange={e => setNewUser({...newUser, last_name: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-green outline-none" />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                            <input type="email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-green outline-none" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+                                            <input type="password" required value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-green outline-none" />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
+                                            <select value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-green outline-none bg-white">
+                                                <option value="AGENT">Agent de Police</option>
+                                                <option value="CITOYEN">Citoyen</option>
+                                                <option value="ADMIN">Administrateur</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                                            <input type="text" value={newUser.telephone} onChange={e => setNewUser({...newUser, telephone: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-green outline-none" />
+                                        </div>
+                                    </div>
+
+                                    {newUser.role === 'AGENT' && (
+                                        <div className="mb-4">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Numéro de Badge (Matricule)</label>
+                                            <input type="text" required value={newUser.badge_agent} onChange={e => setNewUser({...newUser, badge_agent: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-green outline-none" />
+                                        </div>
+                                    )}
+
+                                    {newUser.role === 'CITOYEN' && (
+                                        <div className="mb-4">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Numéro NINA / Carte d'identité</label>
+                                            <input type="text" required value={newUser.nin_carte_identite} onChange={e => setNewUser({...newUser, nin_carte_identite: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-green outline-none" />
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end space-x-3 mt-8">
+                                        <button type="button" onClick={() => setShowUserModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">
+                                            Annuler
+                                        </button>
+                                        <button type="submit" className="px-4 py-2 bg-mali-green text-white rounded-lg hover:bg-green-800 font-medium">
+                                            Créer l'utilisateur
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
 
                 </main>
             </div>

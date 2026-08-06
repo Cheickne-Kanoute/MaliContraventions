@@ -7,6 +7,7 @@ router = DefaultRouter()
 router.register(r'infractions', api_views.InfractionViewSet, basename='api-infraction')
 router.register(r'contraventions', api_views.ContraventionViewSet, basename='api-contravention')
 router.register(r'paiements', api_views.PaiementViewSet, basename='api-paiement')
+router.register(r'utilisateurs', api_views.UtilisateurViewSet, basename='api-utilisateur')
 
 urlpatterns = [
     # Application Web (Templates)
