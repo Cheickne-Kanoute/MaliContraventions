@@ -205,6 +205,9 @@
                 </div>
                 {% else %}
                 <div class="ms-auto d-flex align-items-center gap-2">
+                    <a href="{% url 'code_route' %}" class="btn btn-outline-info rounded-pill px-3 py-1 fw-semibold text-nowrap" style="font-size: 0.85rem;">
+                        <i class="fa-solid fa-book-open me-1"></i> Code de la Route
+                    </a>
                     <a href="{% url 'verifier_pv' %}" class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold text-nowrap" style="font-size: 0.85rem;">
                         <i class="fa-solid fa-barcode me-1"></i> Vérifier un PV
                     </a>
@@ -281,6 +284,10 @@
 
                         <a href="{% url 'verifier_pv' %}" class="nav-link fw-semibold text-dark rounded-3 px-3 py-2 d-flex align-items-center">
                             <i class="fa-solid fa-barcode me-2 text-secondary" style="width: 20px;"></i> Portail de Vérification PV
+                        </a>
+
+                        <a href="{% url 'code_route' %}" class="nav-link fw-semibold text-dark rounded-3 px-3 py-2 d-flex align-items-center">
+                            <i class="fa-solid fa-book-open me-2 text-info" style="width: 20px;"></i> Code de la Route
                         </a>
 
                         {% if user.is_admin_role %}

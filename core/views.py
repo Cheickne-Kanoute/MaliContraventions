@@ -596,3 +596,7 @@ def export_contraventions_csv(request):
         ])
 
     return response
+
+def code_route_view(request):
+    infractions = Infraction.objects.filter(statut_actif=True).order_by('degre_gravite', 'code')
+    return render(request, 'code_route.html', {'infractions': infractions})

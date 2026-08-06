@@ -30,6 +30,7 @@ urlpatterns = [
 
     path('notifications/', views.notifications_list_view, name='notifications_list'),
     path('verifier/', views.verifier_pv_view, name='verifier_pv'),
+    path('code-route/', views.code_route_view, name='code_route'),
     path('statistiques/', views.statistiques_view, name='statistiques'),
     path('statistiques/export/', views.export_contraventions_csv, name='export_contraventions_csv'),
     
