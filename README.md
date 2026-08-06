@@ -14,27 +14,68 @@ Projet basé sur le rapport de projet tutoré (Licence MIAGE).
 
 ---
 
-## 🚀 Lancement Rapide
+## 🚀 Installation et Lancement du Projet
 
 ### 1. Prérequis
-- WAMP Server actif sur Windows (`wampmysqld64` démarré sur le port 3306)
-- Python 3.x
+- **Python 3.10+** (ou version récente de Python 3)
+- **MySQL 8.0+** (activé via WAMP Server, XAMPP ou service MySQL local sur le port `3306`)
+- **Git**
 
-### 2. Démarrage de l'application
-Dans le dossier du projet :
+---
 
-```powershell
-# Activation de l'environnement virtuel
-.\venv\Scripts\Activate.ps1
+### 2. Procédure d'installation pas à pas
 
-# Initialiser la base MySQL et injecter les données de test
+#### Étape A : Cloner le dépôt et accéder au dossier
+```bash
+git clone https://github.com/Cheickne-Kanoute/MaliContraventions.git
+cd MaliContraventions
+```
+
+#### Étape B : Créer et activer l'environnement virtuel
+- **Sur Windows (PowerShell) :**
+  ```powershell
+  python -m venv venv
+  .\venv\Scripts\Activate.ps1
+  ```
+- **Sur Windows (CMD) :**
+  ```cmd
+  python -m venv venv
+  .\venv\Scripts\activate.bat
+  ```
+- **Sur Linux / macOS :**
+  ```bash
+  python3 -m venv venv
+  source venv/bin/activate
+  ```
+
+#### Étape C : Installer les dépendances
+```bash
+pip install -r requirements.txt
+```
+
+#### Étape D : Préparer la base de données MySQL
+1. Démarrer votre serveur MySQL (ex: **WAMP Server** - icône verte dans la barre des tâches).
+2. Créer la base de données nommée **`contravention_db`** (via phpMyAdmin à l'adresse `http://localhost/phpmyadmin` ou en ligne de commande MySQL) :
+   ```sql
+   CREATE DATABASE contravention_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+
+#### Étape E : Exécuter les migrations et alimenter la base
+```bash
+# Exécuter les migrations Django
+python manage.py migrate
+
+# Injecter les données de démonstration (comptes démo, infractions, PVs, etc.)
 python manage.py seed_data
+```
 
-# Lancer le serveur local
+#### Étape F : Lancer le serveur local
+```bash
 python manage.py runserver
 ```
 
-L'application sera accessible sur : **`http://127.0.0.1:8000/`**
+L'application est immédiatement accessible dans votre navigateur à l'adresse :
+👉 **`http://127.0.0.1:8000/`**
 
 ---
 
