@@ -243,3 +243,28 @@ class RegistreNationalNINA(models.Model):
 
     class Meta:
         ordering = ['last_name', 'first_name']
+
+class Litige(models.Model):
+    STATUT_EN_ATTENTE = 'EN_ATTENTE'
+    STATUT_ACCEPTE = 'ACCEPTE'
+    STATUT_REJETE = 'REJETE'
+
+    STATUT_CHOICES = [
+        (STATUT_EN_ATTENTE, 'En attente'),
+        (STATUT_ACCEPTE, 'Accepté'),
+        (STATUT_REJETE, 'Rejeté'),
+    ]
+
+    contravention = models.OneToOneField(Contravention, on_delete=models.CASCADE, related_name='litige')
+    motif = models.TextField(verbose_name="Motif de contestation")
+    piece_jointe = models.FileField(upload_to='litiges/', blank=True, null=True, verbose_name="Pièce justificative")
+    date_depot = models.DateTimeField(auto_now_add=True)
+    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default=STATUT_EN_ATTENTE)
+    decision = models.TextField(blank=True, null=True, verbose_name="Décision de l'administration")
+    date_decision = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Litige sur {self.contravention.numero} ({self.get_statut_display()})"
+
+    class Meta:
+        ordering = ['-date_depot']
