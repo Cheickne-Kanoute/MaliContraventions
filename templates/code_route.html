@@ -21,7 +21,7 @@
     {% regroup infractions by get_degre_gravite_display as gravite_list %}
     
     {% for gravite in gravite_list %}
-        <h5 class="fw-bold text-mali-green mt-4 mb-3 border-bottom pb-2">{{ gravite.grouper }}</h5>
+        <h5 class="fw-bold text-mali-green mt-4 mb-3 border-bottom pb-2">{{ gravite.grouper }} (Extrait)</h5>
         <div class="table-responsive">
             <table class="table table-hover align-middle table-custom">
                 <thead class="table-light">
@@ -33,23 +33,34 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for infraction in gravite.list %}
+                    {% for infraction in gravite.list|slice:":2" %}
                     <tr>
                         <td><span class="badge bg-secondary">{{ infraction.code }}</span></td>
                         <td class="fw-medium">{{ infraction.libelle }}</td>
                         <td class="text-muted small">{{ infraction.description|default:"-" }}</td>
                         <td class="fw-bold text-danger">{{ infraction.montant|floatformat:"0" }}</td>
                     </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center text-muted">Aucune infraction enregistrée dans cette catégorie.</td>
-                    </tr>
                     {% endfor %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted fst-italic">
+                            ... et d'autres infractions. Veuillez consulter le document PDF pour la liste complète.
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
     {% empty %}
-        <p class="text-muted text-center py-4">Aucune infraction enregistrée.</p>
+        <p class="text-muted text-center py-4">Aucune infraction enregistrée dans la base de données.</p>
     {% endfor %}
+
+    <div class="alert alert-success mt-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold mb-1 text-success"><i class="fa-solid fa-circle-info me-2"></i>Consultez l'intégralité du Code</h5>
+            <p class="mb-0 text-dark">Ce tableau ne présente que quelques exemples d'infractions. Pour une connaissance exhaustive de la réglementation, veuillez vous référer au document officiel.</p>
+        </div>
+        <a href="{% static 'documents/code_penal_mali.pdf' %}" target="_blank" download class="btn btn-success shadow text-nowrap">
+            <i class="fa-solid fa-download me-2"></i> Télécharger le PDF Complet
+        </a>
+    </div>
 </div>
 {% endblock %}
