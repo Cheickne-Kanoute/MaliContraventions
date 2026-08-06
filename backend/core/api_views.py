@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions
 from django.utils.crypto import get_random_string
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Utilisateur, Infraction, Contravention, Paiement, Notification, Litige, GPSLocation
+from .models import Utilisateur, Infraction, Contravention, Paiement, Notification, Litige, GPSLocation, RegistreNationalNINA
 from .serializers import UtilisateurSerializer, InfractionSerializer, ContraventionSerializer, PaiementSerializer, NotificationSerializer, LitigeSerializer
 
 
@@ -37,6 +37,20 @@ class ContraventionViewSet(viewsets.ModelViewSet):
             montant=infraction.montant if infraction else 0,
             statut=Contravention.STATUT_EN_ATTENTE
         )
+
+        nina_id = self.request.data.get('nina_id')
+        if nina_id:
+            try:
+                fiche = RegistreNationalNINA.objects.filter(pk=int(nina_id)).first()
+            except (TypeError, ValueError):
+                fiche = None
+            if fiche:
+                contravention.fiche_nina = fiche
+                contravention.citoyen = fiche.utilisateur
+                contravention.nom_contrevenant_saisi = f"{fiche.get_full_name()} ({fiche.nin_nina})"
+                if not contravention.immatriculation_vehicule and fiche.immatriculation_vehicule:
+                    contravention.immatriculation_vehicule = fiche.immatriculation_vehicule
+                contravention.save(update_fields=['fiche_nina', 'citoyen', 'nom_contrevenant_saisi', 'immatriculation_vehicule'])
         
         # Save GPS Location if provided
         lat = self.request.data.get('latitude')
@@ -68,7 +82,17 @@ class ContraventionViewSet(viewsets.ModelViewSet):
                     message=f"Le paiement de {contravention.montant} FCFA a été confirmé."
                 )
 
+    def update(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if request.user.is_agent_role() and obj.agent_id != request.user.id:
+            return Response({'detail': 'Vous ne pouvez modifier que vos propres PV.'}, status=403)
+        return super().update(request, *args, **kwargs)
 
+    def destroy(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if request.user.is_agent_role() and obj.agent_id != request.user.id:
+            return Response({'detail': 'Vous ne pouvez supprimer que vos propres PV.'}, status=403)
+        return super().destroy(request, *args, **kwargs)
 
     @action(detail=False, methods=['get'])
     def geoloc(self, request):

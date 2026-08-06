@@ -34,6 +34,12 @@ class ContraventionSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['numero', 'agent', 'montant', 'statut']
 
+    def update(self, instance, validated_data):
+        if 'infraction' in validated_data:
+            infraction = validated_data['infraction']
+            validated_data['montant'] = infraction.montant
+        return super().update(instance, validated_data)
+
 
 class PaiementSerializer(serializers.ModelSerializer):
     class Meta:

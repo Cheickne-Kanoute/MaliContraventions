@@ -727,10 +727,13 @@ def api_contraventions_geoloc(request):
     from .models import GPSLocation
     if not request.user.is_admin_role() and not request.user.is_agent_role():
         return JsonResponse({'error': 'Unauthorized'}, status=403)
-        
-    locations = GPSLocation.objects.select_related('contravention', 'contravention__infraction').all()
+
+    queryset = GPSLocation.objects.select_related('contravention', 'contravention__infraction')
+    if request.user.is_agent_role():
+        queryset = queryset.filter(contravention__agent=request.user)
+
     data = []
-    for loc in locations:
+    for loc in queryset.all():
         data.append({
             'lat': loc.latitude,
             'lng': loc.longitude,
