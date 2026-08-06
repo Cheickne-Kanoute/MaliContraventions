@@ -7,7 +7,9 @@ const Home = () => {
             {/* Top Bar */}
             <div className="border-b border-white/10 px-6 py-4 flex justify-between items-center text-xs text-gray-300">
                 <div className="flex items-center space-x-2">
-                    <img src="/vite.svg" alt="Logo" className="w-6 h-6" />
+                    <div className="bg-white/10 p-1.5 rounded-full border border-white/20">
+                        <Shield className="w-5 h-5 text-yellow-500" />
+                    </div>
                     <div>
                         <div className="font-bold text-white">République du Mali</div>
                         <div className="text-[10px]">Ministère de la Sécurité et de la Protection Civile</div>
