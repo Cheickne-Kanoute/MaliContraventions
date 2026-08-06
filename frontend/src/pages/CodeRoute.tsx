@@ -1,4 +1,4 @@
-import { ChevronLeft, Scale, AlertTriangle, AlertCircle, Info } from 'lucide-react';
+import { ChevronLeft, Scale, AlertTriangle, AlertCircle, Info, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const CodeRoute = () => {
@@ -138,6 +138,25 @@ const CodeRoute = () => {
                             </table>
                         </div>
                     </div>
+                </section>
+
+                {/* Download PDF Section */}
+                <section className="mt-12 bg-[#0a3622] text-white rounded-xl p-8 flex flex-col sm:flex-row items-center justify-between shadow-lg">
+                    <div className="mb-6 sm:mb-0">
+                        <h3 className="text-xl font-bold mb-2">Document Officiel</h3>
+                        <p className="text-sm text-gray-300">
+                            Consultez l'intégralité du Code de la Route et du Code Pénal malien pour plus de détails sur les autres infractions existantes.
+                        </p>
+                    </div>
+                    <a 
+                        href="/documents/code_penal_mali.pdf" 
+                        target="_blank" 
+                        download 
+                        className="flex items-center bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-6 rounded-lg transition-colors shadow-md whitespace-nowrap"
+                    >
+                        <Download className="w-5 h-5 mr-2" />
+                        Télécharger le PDF complet
+                    </a>
                 </section>
 
             </div>
