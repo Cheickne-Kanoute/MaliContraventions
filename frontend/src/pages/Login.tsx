@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import { Shield, ChevronLeft, UserCircle } from 'lucide-react';
 
@@ -8,7 +8,12 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    
+    const role = searchParams.get('role') || 'admin';
+    const roleTitle = role === 'agent' ? 'Agent de Police' : role === 'citoyen' ? 'Citoyen' : 'Administrateur';
+    const roleColor = role === 'agent' ? 'blue' : role === 'citoyen' ? 'green' : 'yellow';
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,9 +31,14 @@ const Login = () => {
             localStorage.setItem('access_token', access);
             localStorage.setItem('refresh_token', refresh);
             
-            // Decode JWT to get user role, or simply fetch user profile
-            // For now, redirect to admin dashboard as requested
-            navigate('/dashboard/admin');
+            // Redirect based on selected role
+            if (role === 'agent') {
+                navigate('/dashboard/agent');
+            } else if (role === 'citoyen') {
+                navigate('/dashboard/citoyen');
+            } else {
+                navigate('/dashboard/admin');
+            }
             
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Identifiants incorrects');
@@ -53,10 +63,12 @@ const Login = () => {
 
                 {/* Espace Card preview */}
                 <div className="bg-mali-dark border border-gray-600 rounded-xl p-8 flex flex-col items-center w-80 shadow-lg relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-mali-green via-mali-yellow to-mali-red"></div>
-                    <UserCircle className="w-10 h-10 text-mali-yellow mb-4" />
-                    <h3 className="text-xl font-bold mb-1">Espace Administrateur</h3>
-                    <p className="text-xs text-gray-400 text-center">Accès réservé à l'administration</p>
+                    <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-mali-green via-${roleColor}-500 to-mali-red`}></div>
+                    <UserCircle className={`w-10 h-10 text-${roleColor}-500 mb-4`} />
+                    <h3 className="text-xl font-bold mb-1">Espace {roleTitle}</h3>
+                    <p className="text-xs text-gray-400 text-center">
+                        {role === 'citoyen' ? 'Consultation et paiement en ligne' : `Accès réservé à l'${roleTitle.toLowerCase()}`}
+                    </p>
                 </div>
             </div>
 
@@ -76,7 +88,7 @@ const Login = () => {
                             </div>
                             <h2 className="text-2xl font-bold text-gray-900">Connexion</h2>
                         </div>
-                        <p className="text-gray-500 text-sm">Espace Administrateur</p>
+                        <p className="text-gray-500 text-sm">Espace {roleTitle}</p>
                     </div>
 
                     {error && (
@@ -88,7 +100,7 @@ const Login = () => {
                     <form onSubmit={handleLogin} className="space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Adresse email professionnelle*
+                                {role === 'citoyen' ? 'Adresse email ou NINA*' : 'Identifiant professionnel*'}
                             </label>
                             <input
                                 type="text" // Using text to allow email or username depending on backend

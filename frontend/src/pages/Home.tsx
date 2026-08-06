@@ -57,7 +57,7 @@ const Home = () => {
                             <span className="text-[10px] bg-white/5 border border-white/10 px-2 py-1 rounded">Paramètres système</span>
                         </div>
 
-                        <Link to="/login" className="w-full py-3 bg-yellow-500 hover:bg-yellow-600 text-black font-bold rounded-lg text-center text-sm transition-colors mt-auto">
+                        <Link to="/login?role=admin" className="w-full py-3 bg-yellow-500 hover:bg-yellow-600 text-black font-bold rounded-lg text-center text-sm transition-colors mt-auto">
                             Accéder à l'espace Administrateur &rarr;
                         </Link>
                     </div>
@@ -79,7 +79,7 @@ const Home = () => {
                             <span className="text-[10px] bg-white/5 border border-white/10 px-2 py-1 rounded">Statistiques</span>
                         </div>
 
-                        <Link to="/login" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-center text-sm transition-colors mt-auto">
+                        <Link to="/login?role=agent" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-center text-sm transition-colors mt-auto">
                             Accéder à l'espace Agent de Police &rarr;
                         </Link>
                     </div>
@@ -101,7 +101,7 @@ const Home = () => {
                             <span className="text-[10px] bg-white/5 border border-white/10 px-2 py-1 rounded">Déposer un litige</span>
                         </div>
 
-                        <Link to="/login" className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg text-center text-sm transition-colors mt-auto">
+                        <Link to="/login?role=citoyen" className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg text-center text-sm transition-colors mt-auto">
                             Accéder à l'espace Citoyen &rarr;
                         </Link>
                     </div>
