@@ -268,3 +268,13 @@ class Litige(models.Model):
 
     class Meta:
         ordering = ['-date_depot']
+
+class GPSLocation(models.Model):
+    contravention = models.OneToOneField(Contravention, on_delete=models.CASCADE, related_name='gps_location')
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    adresse = models.CharField(max_length=255, blank=True, null=True, verbose_name="Adresse géocodée")
+
+    def __str__(self):
+        return f"GPS {self.latitude}, {self.longitude} (PV: {self.contravention.numero})"
+
