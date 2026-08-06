@@ -10,6 +10,7 @@ from django.db.models import Sum, Count, Q
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponse
+from django.conf import settings
 from .models import Utilisateur, Infraction, Contravention, Paiement, Notification, RegistreNationalNINA
 from .forms import InscriptionCitoyenForm, AgentCreationForm, AgentEditForm, ContraventionForm, InfractionForm, PaiementForm
 
@@ -93,6 +94,7 @@ def dashboard_view(request):
             'montant_impaye': montant_impaye,
             'contraventions_recentes': contraventions_recentes,
             'repartition_communes': repartition_communes,
+            'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
         }
         return render(request, 'dashboard.html', context)
 

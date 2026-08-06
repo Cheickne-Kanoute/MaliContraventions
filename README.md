@@ -30,6 +30,9 @@ Dans le dossier du projet :
 # Initialiser la base MySQL et injecter les données de test
 python manage.py seed_data
 
+# Cle Google Maps pour la carte des infractions
+$env:GOOGLE_MAPS_API_KEY='VOTRE_CLE_GOOGLE_MAPS'
+
 # Lancer le serveur local
 python manage.py runserver
 ```

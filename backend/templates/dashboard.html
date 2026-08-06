@@ -190,45 +190,84 @@
             </div>
         </div>
 
-        <!-- Carte Géolocalisation (Leaflet) -->
+        <!-- Carte Geolocalisation (Google Maps) -->
         <div class="card card-custom p-3 p-md-4 mb-4">
             <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-map text-success me-2"></i>Carte des Infractions</h5>
-            <div id="map" style="height: 300px; border-radius: 10px;"></div>
+            {% if google_maps_api_key %}
+                <div id="map" class="shadow-sm" style="height: 320px; border-radius: 10px;"></div>
+            {% else %}
+                <div class="alert alert-warning mb-0 rounded-4 small">
+                    <i class="fa-solid fa-key me-2"></i>
+                    Ajoutez la variable d'environnement <strong>GOOGLE_MAPS_API_KEY</strong> pour afficher la carte Google Maps.
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
 
 {% block extra_head %}
-<!-- Leaflet CSS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    .gm-style .gm-style-iw-c {
+        border-radius: 10px;
+    }
+</style>
 {% endblock %}
 
 {% block extra_js %}
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{% if google_maps_api_key %}
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        if (document.getElementById('map')) {
-            var map = L.map('map').setView([12.6392, -8.0029], 12); // Bamako
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
+    function initInfractionsMap() {
+        const mapElement = document.getElementById('map');
+        if (!mapElement) return;
 
-            fetch("{% url 'api_contraventions_geoloc' %}")
-                .then(response => response.json())
-                .then(data => {
-                    if(data.locations) {
-                        data.locations.forEach(loc => {
-                            var marker = L.marker([loc.lat, loc.lng]).addTo(map);
-                            marker.bindPopup(`<b>PV: ${loc.numero}</b><br>${loc.infraction}<br>${loc.montant} FCFA<br>Statut: ${loc.statut}`);
-                        });
-                    }
-                })
-                .catch(error => console.error("Erreur de chargement de la carte", error));
-        }
-    });
+        const bamako = { lat: 12.6392, lng: -8.0029 };
+        const map = new google.maps.Map(mapElement, {
+            center: bamako,
+            zoom: 12,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: true,
+        });
+        const bounds = new google.maps.LatLngBounds();
+        const infoWindow = new google.maps.InfoWindow();
+
+        fetch("{% url 'api_contraventions_geoloc' %}")
+            .then(response => response.json())
+            .then(data => {
+                if (!data.locations || data.locations.length === 0) return;
+
+                data.locations.forEach(loc => {
+                    const position = { lat: Number(loc.lat), lng: Number(loc.lng) };
+                    if (Number.isNaN(position.lat) || Number.isNaN(position.lng)) return;
+
+                    const marker = new google.maps.Marker({
+                        position,
+                        map,
+                        title: `PV ${loc.numero}`,
+                    });
+
+                    marker.addListener('click', () => {
+                        infoWindow.setContent(`
+                            <div style="min-width: 190px">
+                                <strong>PV: ${loc.numero}</strong><br>
+                                ${loc.infraction}<br>
+                                <span>${Number(loc.montant).toLocaleString('fr-FR')} FCFA</span><br>
+                                <small>Statut: ${loc.statut}</small>
+                            </div>
+                        `);
+                        infoWindow.open(map, marker);
+                    });
+
+                    bounds.extend(position);
+                });
+
+                map.fitBounds(bounds);
+            })
+            .catch(error => console.error("Erreur de chargement de la carte", error));
+    }
 </script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key|urlencode }}&callback=initInfractionsMap"></script>
+{% endif %}
 {% endblock %}
 
 {% elif role_view == 'AGENT' %}
